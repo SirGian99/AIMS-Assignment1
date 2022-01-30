@@ -16,12 +16,18 @@ public class PathFinder : MonoBehaviour
         List<Node> open_set = new List<Node>();
         HashSet<Node> closed_set = new HashSet<Node>();
         open_set.Add(start_node);
+        bool k = true;
 
         while (open_set.Count > 0)
         {
-            //Debug.Log("Sono nel while");
+
             Node current = open_set[0];
-            for(int i=1; i<open_set.Count; i++)
+            if (k)
+            {
+                Debug.Log("Nodo fuori penalty: " + current.wallClosenessCost);
+                Debug.Log("Totale: " + current.fCost);
+            }
+            for (int i=1; i<open_set.Count; i++)
             {
                 if(open_set[i].fCost < current.fCost || open_set[i].fCost == current.fCost && open_set[i].hCost < current.hCost)
                 {
@@ -45,11 +51,11 @@ public class PathFinder : MonoBehaviour
                 graph.path = path;
                 foreach(Node n in graph.path)
                 {
-                    Debug.Log("Path, nodo (" + previous_node.i + "," + previous_node.j + ")");
+                    //Debug.Log("Path, nodo (" + previous_node.i + "," + previous_node.j + ")");
                 }
             }
 
-            foreach(Node neighbour in graph.getNeighbours(current))
+            foreach(Node neighbour in current.neighbours)
             {
                 if (!neighbour.walkable || closed_set.Contains(neighbour))
                     continue;
@@ -62,6 +68,11 @@ public class PathFinder : MonoBehaviour
 
                     if (!open_set.Contains(neighbour))
                         open_set.Add(neighbour);
+                    else
+                    {
+                        open_set.Remove(neighbour);
+                        open_set.Add(neighbour);
+                    }
                 }
 
             }
@@ -74,10 +85,9 @@ public class PathFinder : MonoBehaviour
         int x_distance = Math.Abs(start.i - end.i);
         int z_distance = Math.Abs(start.j - end.j);
 
-        int diagonal_cost = 14;
-        int straight_cost = 10; //TODO MODIFY THEM
+        float diagonal_cost = (float)(Math.Sqrt(Math.Pow(graph.x_unit,2) + Math.Pow(graph.z_unit,2)));
 
-        return diagonal_cost * (x_distance < z_distance ? x_distance : z_distance) + straight_cost * (x_distance * graph.x_unit + z_distance * graph.z_unit);
+        return diagonal_cost * (x_distance < z_distance ? x_distance : z_distance) + (x_distance >= z_distance ? x_distance * graph.x_unit : z_distance * graph.z_unit);
 
     }
 

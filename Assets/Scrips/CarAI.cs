@@ -49,8 +49,19 @@ namespace UnityStandardAssets.Vehicles.Car
             Debug.Log(terrain_manager.myInfo.traversability.Length);
             Debug.Log(terrain_manager.myInfo.traversability.Rank);
             string traversability_string = "";
+            /*
+            Vector3 carSize = new Vector3(2f, 0.81f, 2f)*2;
+            Vector3 granularity = new Vector3((terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low) / carSize.x, 1, (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low) / carSize.z);
 
-            graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.traversability.GetLength(0)*2, terrain_manager.myInfo.traversability.GetLength(1)*2);
+            Vector3 cube_size = new Vector3((terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low)/ terrain_manager.myInfo.x_N, 0, (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low) / terrain_manager.myInfo.z_N);
+            granularity = cube_size / 2;
+            Debug.Log("Granularity x: "+(int)(granularity.x));
+            Debug.Log("Granularity z: "+(int)(granularity.z));
+
+            graph = Graph.CreateGraph(terrain_manager.myInfo, (int)(granularity.x), (int)(granularity.z));
+            */
+            graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.traversability.GetLength(0)*2, terrain_manager.myInfo.traversability.GetLength(1) * 2);
+
             for (int i = 0; i < terrain_manager.myInfo.traversability.GetLength(0); i++)
             {
                 for (int j = 0; j < terrain_manager.myInfo.traversability.GetLength(1); j++)

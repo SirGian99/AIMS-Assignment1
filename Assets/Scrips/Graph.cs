@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Graph{
     public int i_size;
@@ -105,7 +106,18 @@ public class Graph{
 
                 int i_index = terrainInfo.get_i_index(x_center);
                 int j_index = terrainInfo.get_j_index(z_center);
-                if (terrainInfo.traversability[i_index, j_index] == 0)
+                Collider[] collision = Physics.OverlapSphere(new Vector3(x_center, 1, z_center), Math.Max(x_unit/2, z_unit/2));
+                bool walkable = true;
+                foreach (Collider c in collision)
+                {
+                    if (c.name == "Cube")
+                    {
+                        walkable = false;
+                        break;
+                    }
+                }
+                walkable = true; //TODO understand why if I implement this (hence, if i remove this line) no path is found on terrain B
+                if (terrainInfo.traversability[i_index, j_index] == 0 && walkable)
                 {
                     //Gizmos.color = Color.blue;
                     graph.graphTraversabilityMatrix[i, j] = 0; //0 means that the node is traversable
@@ -172,6 +184,11 @@ public class Graph{
 
             }
         }
+
+        foreach(Node node in graph.nodes)
+        {
+            node.neighbours = graph.getNeighbours(node);
+        }
         return graph;
     }
 
@@ -188,7 +205,7 @@ public class Graph{
         return nodes[i, j];
     }
 
-    public List<Node> getNeighbours(Node node)
+    public List<Node> getNeighbours(Node node, bool print=false)
     {
         List<Node> toReturn = new List<Node>();
         for(int i = -1; i<2; i++)
@@ -202,6 +219,12 @@ public class Graph{
                 if (current_j < 0 || current_j >= nodes.GetLength(1) || i==0 && j==0)
                     continue;
                 toReturn.Add(nodes[current_i, current_j]);
+                if (!(nodes[current_i, current_j].walkable))
+                {
+                    node.wallClosenessCost += 25;
+                    if(print)
+                        Debug.Log("Current node penalty: " + node.wallClosenessCost);
+                }
             }
         }
         return toReturn;

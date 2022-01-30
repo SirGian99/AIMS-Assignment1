@@ -14,14 +14,17 @@ public class Node
 
     public float gCost;
     public float hCost;
-    public float additionalCost = 0; //to be used while using hybrid A*
+    public float hybridAdditionalCost = 0; //to be used while using hybrid A*
+    public float wallClosenessCost = 0; 
     public float fCost {
         get
         {
-            return gCost + hCost + additionalCost;
+            Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
+            return gCost + hCost + hybridAdditionalCost + wallClosenessCost;
         }
     }
     public Node parent;
+    public List<Node> neighbours;
 
 
     public Node(int i, int j, float x_pos, float z_pos, bool walkable=true)
