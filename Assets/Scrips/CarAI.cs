@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using static Node;
+using static DubinsPath;
+using static GenerateDrivingDirections;
 
 
 namespace UnityStandardAssets.Vehicles.Car
@@ -20,6 +22,7 @@ namespace UnityStandardAssets.Vehicles.Car
         public GameObject terrain_manager_game_object;
         TerrainManager terrain_manager;
         public Graph graph;
+        GenerateDrivingDirections dubinsPathGenerator;
 
         private void Start()
         {
@@ -97,17 +100,19 @@ namespace UnityStandardAssets.Vehicles.Car
                 old_wp = wp;
             }
 
-            PathFinder.findPath(graph, start_pos, goal_pos);
-            
+            PathFinder.findPath(graph, start_pos, goal_pos); // path is accessible through graph.path
+
+            dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
+
         }
 
-        void OnDrawGizmos()
+        void OnDrawGizmos() // draws grid on map and shows car
         {
             Debug.Log("HERE!!!");
             if (graph != null)
             {
                 Debug.Log("HERE TOO!!!");
-                foreach (Node n in graph.nodes)
+                foreach (Node n in graph.nodes) // graph.path 
                 {
                     Gizmos.color = (n.walkable) ? Color.blue : Color.red;
                     if(graph.path != null && graph.path.Contains(n))
@@ -116,7 +121,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
 
                 Node currentNode = graph.getNodeFromPoint(transform.position);
-                Gizmos.color = Color.cyan;
+                Gizmos.color = Color.cyan; // position of car
                 Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
             }
         }
@@ -127,6 +132,7 @@ namespace UnityStandardAssets.Vehicles.Car
             // Execute your path here
             // ...
 
+
             // this is how you access information about the terrain from the map
             int i = terrain_manager.myInfo.get_i_index(transform.position.x);
             int j = terrain_manager.myInfo.get_j_index(transform.position.z);
@@ -135,6 +141,81 @@ namespace UnityStandardAssets.Vehicles.Car
 
             Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
 
+            //We need some information to use Dubins paths, start_pos, next position in the path, and headings.
+            Vector3 start;
+            Vector3 end;
+            start = transform.position;
+            float startHeading = transform.eulerAngles.y * Mathf.Deg2Rad;
+            float endHeading;
+            float turnLeft = m_Car.m_MaximumSteerAngle * -1f;
+            float turnRight = m_Car.m_MaximumSteerAngle;
+
+            foreach (Node n in graph.path)
+            {
+                if (n != null)
+                {
+                    //update the new ending position
+                    
+                    end.x = n.x_pos;
+                    end.y = start.y;
+                    end.z = n.z_pos;
+                    endHeading = 0; // n.heading;
+
+                    List<DubinsPath> pathList = dubinsPathGenerator.makeManyDubinsPaths(
+                        start,
+                        startHeading,
+                        end,
+                        endHeading);
+
+                    if (pathList.Count > 0)
+                    {
+                        foreach (DubinsPath path in pathList)
+                        {
+                            switch(path.pathType)
+                            { 
+                                case GenerateDrivingDirections.PathType.LRL:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RLR:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.LSR:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.LSL:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RSL:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RSR:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                             }
+
+                        }
+
+                    }
+                    GenerateDrivingDirections.PositionLeftRightCircles();
+                    start = end;
+
+                }
+            }
+
+
+/*
             // this is how you access information about the terrain from a simulated laser range finder
             RaycastHit hit;
             float maxRange = 50f;
@@ -145,13 +226,13 @@ namespace UnityStandardAssets.Vehicles.Car
                 //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
                 //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
             }
-
+*/
 
             // this is how you control the car
             // public void Move(float steering, float accel, float footbrake, float handbrake)
             // we can access the dimension of the terrain and of each block
 
-            m_Car.Move(1f, 1f, 1f, 0f);
+            //m_Car.Move(1f, 1f, 1f, 0f);
             //Debug.Log("Max steering angle: " + m_Car.m_MaximumSteerAngle);
 
 
