@@ -16,6 +16,7 @@ namespace UnityStandardAssets.Vehicles.Car
     {
 
         private CarController m_Car; // the car controller we want to use
+        public List<NewNode> path;
 
         public GameObject terrain_manager_game_object;
         TerrainManager terrain_manager;
@@ -44,10 +45,11 @@ namespace UnityStandardAssets.Vehicles.Car
                 my_path.Add(waypoint);
             }
             my_path.Add(goal_pos);
-            Debug.Log(terrain_manager.myInfo.traversability.GetLength(0));
+            /*Debug.Log(terrain_manager.myInfo.traversability.GetLength(0));
             Debug.Log(terrain_manager.myInfo.traversability.GetLength(1));
             Debug.Log(terrain_manager.myInfo.traversability.Length);
             Debug.Log(terrain_manager.myInfo.traversability.Rank);
+            */
             string traversability_string = "";
             /*
             Vector3 carSize = new Vector3(2f, 0.81f, 2f)*2;
@@ -96,29 +98,94 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawLine(old_wp, wp, Color.red, 100f);
                 old_wp = wp;
             }
+            float initial_orientation = 90f;
+            //PathFinder.findPath(graph, new Vector4(start_pos.x, start_pos.y, start_pos.z, initial_orientation), new Vector4(goal_pos.x, goal_pos.y, goal_pos.z, initial_orientation),PathFinder.getSteeringSteps(25f, 1), 20, 10) ;
 
-            PathFinder.findPath(graph, start_pos, goal_pos);
-            
+            path = PathFinder.FindPath2(graph, new Vector4(start_pos.x, start_pos.y, start_pos.z, initial_orientation), new Vector4(goal_pos.x, goal_pos.y, goal_pos.z, initial_orientation), PathFinder.getSteeringSteps(25f, 1), 20, 10);
+
+
+            if (graph.path != null)
+            {
+                foreach (Node n in graph.path)
+                {
+                    Debug.Log("Current node pos: (" + n.x_pos + "," + n.z_pos + ")");
+                }
+            }
+
         }
 
         void OnDrawGizmos()
         {
-            Debug.Log("HERE!!!");
             if (graph != null)
             {
-                Debug.Log("HERE TOO!!!");
                 foreach (Node n in graph.nodes)
                 {
+                    float n_x = n.x_pos;
+                    float n_z = n.z_pos;
                     Gizmos.color = (n.walkable) ? Color.blue : Color.red;
-                    if(graph.path != null && graph.path.Contains(n))
-                        Gizmos.color = Color.green;
-                    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit*0.8f, 0.5f, graph.z_unit*0.8f));
+                    /*if(path != null)
+                    {
+                        foreach(NewNode node in path)
+                        {
+                            float x = node.continous_position.x;
+                            float z = node.continous_position.z;
+                            if (x<= n_x + Graph.x_unit && x<= n_x - Graph.x_unit && z <= n_z + Graph.z_unit && z <= n_z - Graph.z_unit)
+                            {
+                                Debug.Log("Pos of GREEN node: " + node.continous_position);
+
+                                Gizmos.color = Color.green;
+                                break;
+                            }
+                            else
+                            {
+                                Debug.Log("Pos of node: " + node.continous_position);
+
+                            }
+                        }
+                    }*/
+                        
+                    Gizmos.DrawCube(n.worldPosition, new Vector3(Graph.x_unit*0.8f, 0.5f, Graph.z_unit*0.8f));
                 }
 
                 Node currentNode = graph.getNodeFromPoint(transform.position);
                 Gizmos.color = Color.cyan;
-                Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+                Gizmos.DrawCube(currentNode.worldPosition, new Vector3(Graph.x_unit * 0.8f, 0.5f, Graph.z_unit * 0.8f));
             }
+            /*
+            for(int i = 1; i< PathFinder.visited_points.Count; i++)
+            {
+                Gizmos.DrawLine(PathFinder.visited_points[i - 1].continousPosition, PathFinder.visited_points[i].continousPosition);
+            }
+            */
+
+            /*for (int i = 1; i < PathFinder.newVisited_points.Count; i++)
+            {
+                Gizmos.color = Color.yellow;
+
+                Vector3 start = PathFinder.newVisited_points[i - 1].continous_position;
+                Vector3 end = PathFinder.newVisited_points[i].continous_position;
+                Gizmos.DrawLine(start, end);
+                Debug.Log("Starting from: " + start + "walkable: " + Graph.isWalkable(start) +" to end: " + end + " walkable: " + Graph.isWalkable(end));
+
+            }
+            */
+            
+
+            for (int i = 1; i < path.Count; i++)
+            {
+                Gizmos.color = Color.green;
+
+                Vector3 start = path[i - 1].continous_position;
+                Vector3 end = path[i].continous_position;
+                Gizmos.DrawLine(start, end);
+                Debug.Log("Starting from: " + start + "walkable: " + Graph.isWalkable(start) + " to end: " + end + " walkable: " + Graph.isWalkable(end));
+
+            }
+
+            Gizmos.DrawLine(path[path.Count-1].continous_position, graph.goal_node.worldPosition);
+
+
+
         }
 
         private void FixedUpdate()
@@ -152,9 +219,12 @@ namespace UnityStandardAssets.Vehicles.Car
             // we can access the dimension of the terrain and of each block
 
             m_Car.Move(1f, 1f, 1f, 0f);
+            
             //Debug.Log("Max steering angle: " + m_Car.m_MaximumSteerAngle);
 
 
         }
+
     }
+
 }

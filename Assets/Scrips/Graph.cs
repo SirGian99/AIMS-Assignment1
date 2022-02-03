@@ -10,11 +10,12 @@ public class Graph{
     public float x_high;
     public float z_low;
     public float z_high;
-    public float x_unit;
-    public float z_unit;
+    public static float x_unit;
+    public static float z_unit;
     public Node start_node;
     public Node goal_node;
     public List<Node> path;
+    public static TerrainInfo terrain;
 
     public int[,] graphTraversabilityMatrix;
 
@@ -29,8 +30,8 @@ public class Graph{
         this.x_high = x_high;
         this.z_low = z_low;
         this.z_high = z_high;
-        this.x_unit = (x_high - x_low) / i_size;
-        this.z_unit = (z_high - z_low) / j_size;
+        x_unit = (x_high - x_low) / i_size;
+        z_unit = (z_high - z_low) / j_size;
         this.edges = new HashSet<GraphEdge>();
         this.nodes = new Node[i_size, j_size];
         this.graphTraversabilityMatrix = new int[i_size, j_size];
@@ -84,9 +85,10 @@ public class Graph{
             //Debug.Log("x_N or z_N is less than or equal to 0");
             return null;
         }
-
+        
         //Debug.Log("myFunction");
         Graph graph = new Graph(x_N, z_N, terrainInfo.x_low, terrainInfo.x_high, terrainInfo.z_low, terrainInfo.z_high);
+        Graph.terrain = terrainInfo;
         float x_len = terrainInfo.x_high - terrainInfo.x_low;
         float z_len = terrainInfo.z_high - terrainInfo.z_low;
         float x_unit = x_len / x_N;
@@ -228,5 +230,15 @@ public class Graph{
             }
         }
         return toReturn;
+    }
+
+    public static bool isWalkable(Vector3 position)
+    {
+        int i = Graph.terrain.get_i_index(position.x);
+        int j = Graph.terrain.get_j_index(position.z);
+
+        //Debug.Log("Checking if " + position + "is walkable: [" + i + "," + j + "]: " + (terrain.traversability[i, j] == 0f));
+        return Graph.terrain.traversability[i, j] == 0f;
+
     }
 }

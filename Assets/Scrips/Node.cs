@@ -6,20 +6,21 @@ public class Node
 {
     public int i;
     public int j;
-    public float x_pos;
-    public float z_pos;
+    public float x_pos = 0;
+    public float z_pos = 0;
     public bool walkable;
     public Vector3 worldPosition;
+    public Vector3 realPathPosition;
 
-
-    public float gCost;
-    public float hCost;
+     
+    public float gCost; //distance from the starting node
+    public float hCost; //distance from the arrival node
     public float hybridAdditionalCost = 0; //to be used while using hybrid A*
     public float wallClosenessCost = 0; 
     public float fCost {
         get
         {
-            Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
+            //Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
             return gCost + hCost + hybridAdditionalCost + wallClosenessCost;
         }
     }
@@ -40,19 +41,10 @@ public class Node
     // override object.Equals
     public override bool Equals(object obj)
     {
-        //
-        // See the full list of guidelines at
-        //   http://go.microsoft.com/fwlink/?LinkID=85237
-        // and also the guidance for operator== at
-        //   http://go.microsoft.com/fwlink/?LinkId=85238
-        //
-
         if (obj == null || GetType() != obj.GetType())
         {
             return false;
         }
-
-
         return i == ((Node)obj).i && j == ((Node)obj).j; //////TODO add check also on positions
     }
 
