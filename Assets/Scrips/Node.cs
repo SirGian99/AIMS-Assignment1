@@ -10,6 +10,7 @@ public class Node
     public float z_pos;
     public bool walkable;
     public Vector3 worldPosition;
+    public float heading;
 
 
     public float gCost;

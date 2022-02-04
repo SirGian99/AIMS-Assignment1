@@ -5,6 +5,7 @@ using System;
 
 public class PathFinder : MonoBehaviour
 {
+    public static float[,] headings = new float[,] { { 135f, 90f, 45f }, { 180f, 0f, 0f }, { 225f, 270f, 315f } };
 
     public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position)
     {
@@ -65,6 +66,33 @@ public class PathFinder : MonoBehaviour
                     neighbour.gCost = costToNeighb;
                     neighbour.hCost = getDistance(graph, neighbour, goal_node);
                     neighbour.parent = current;
+                    neighbour.heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
+                    String s = String.Format("Starting from [{0},{1}] to [{2},{3}] with angle {4}", current.i, current.j, neighbour.i, neighbour.j, neighbour.heading);
+                    Debug.Log(s);
+                    /*switch (current.heading){
+                        case Node.Turn.A:
+                            if (neighbour.i > current.i)
+                                if(neighbour.j > current.j)
+                                {
+                                    neighbour.turn_from_parent[0] = Node.Turn.A;
+                                    neighbour.turn_from_parent[1] = Node.Turn.R;
+                                    neighbour.heading = 
+
+                                }
+
+                                else if (neighbour.i < current.i)
+                            else neighbour.turn_from_parent[0] = neighbour.turn_from_parent[1];
+
+                                        break;
+                        case Node.Turn.B:
+                            break;
+                        case Node.Turn.L:
+                            break;
+                        case Node.Turn.R:
+                            break;
+
+                    }*/
+
 
                     if (!open_set.Contains(neighbour))
                         open_set.Add(neighbour);
