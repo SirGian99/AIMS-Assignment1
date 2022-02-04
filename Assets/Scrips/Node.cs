@@ -20,7 +20,7 @@ public class Node
     public float fCost {
         get
         {
-            Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
+            //Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
             return gCost + hCost + hybridAdditionalCost + wallClosenessCost;
         }
     }
@@ -63,5 +63,19 @@ public class Node
 
         return base.GetHashCode();
     }
+
+    public Node copy()
+    {
+        Node copy = new Node(i, j, x_pos, z_pos, walkable);
+        copy.neighbours = neighbours;
+        copy.gCost = gCost;
+        copy.hCost = hCost;
+        copy.hybridAdditionalCost = hybridAdditionalCost;
+        copy.wallClosenessCost = wallClosenessCost;
+        copy.heading = heading;
+        copy.parent = parent;
+        return copy;
+    }
+
 }
 
