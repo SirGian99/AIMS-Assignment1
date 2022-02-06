@@ -23,11 +23,18 @@ namespace UnityStandardAssets.Vehicles.Car
         TerrainManager terrain_manager;
         public Graph graph;
         GenerateDrivingDirections dubinsPathGenerator;
+        private Vector3 targetPosition;
+        float steeringAmount;
+        float accelerationAmount;
+        float handbrake;
+        float footbrake;
+        int nodeNumber;
 
         private void Start()
         {
             // get the car controller
             m_Car = GetComponent<CarController>();
+            DubinsMath.rb = GetComponent<Rigidbody>();
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
 
             // Plan your path here
@@ -36,6 +43,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             Vector3 start_pos = terrain_manager.myInfo.start_pos;
             Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
+            nodeNumber = 0; // We start at the beginning of the path
 
             List<Vector3> my_path = new List<Vector3>();
 
@@ -102,16 +110,16 @@ namespace UnityStandardAssets.Vehicles.Car
 
             PathFinder.findPath(graph, start_pos, goal_pos); // path is accessible through graph.path
 
-            dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
+            //dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
 
         }
 
         void OnDrawGizmos() // draws grid on map and shows car
         {
-            Debug.Log("HERE!!!");
+            //Debug.Log("HERE!!!");
             if (graph != null)
             {
-                Debug.Log("HERE TOO!!!");
+                //Debug.Log("HERE TOO!!!");
                 foreach (Node n in graph.nodes) // graph.path 
                 {
                     Gizmos.color = (n.walkable) ? Color.blue : Color.red;
@@ -126,21 +134,8 @@ namespace UnityStandardAssets.Vehicles.Car
             }
         }
 
-        private void FixedUpdate()
+        private void MoveDubins()
         {
-            
-            // Execute your path here
-            // ...
-
-
-            // this is how you access information about the terrain from the map
-            int i = terrain_manager.myInfo.get_i_index(transform.position.x);
-            int j = terrain_manager.myInfo.get_j_index(transform.position.z);
-            float grid_center_x = terrain_manager.myInfo.get_x_pos(i);
-            float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
-
-            Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
-
             //We need some information to use Dubins paths, start_pos, next position in the path, and headings.
             Vector3 start;
             Vector3 end;
@@ -149,7 +144,7 @@ namespace UnityStandardAssets.Vehicles.Car
             float endHeading;
             float turnLeft = m_Car.m_MaximumSteerAngle * -1f;
             float turnRight = m_Car.m_MaximumSteerAngle;
-
+            
             foreach (Node n in graph.path)
             {
                 if (n != null)
@@ -159,7 +154,7 @@ namespace UnityStandardAssets.Vehicles.Car
                     end.x = n.x_pos;
                     end.y = start.y;
                     end.z = n.z_pos;
-                    endHeading = 0; // n.heading;
+                    endHeading = n.heading;
 
                     List<DubinsPath> pathList = dubinsPathGenerator.makeManyDubinsPaths(
                         start,
@@ -171,6 +166,7 @@ namespace UnityStandardAssets.Vehicles.Car
                     {
                         foreach (DubinsPath path in pathList)
                         {
+                            Debug.Log("Current path type: " + path.pathType);
                             switch(path.pathType)
                             { 
                                 case GenerateDrivingDirections.PathType.LRL:
@@ -208,13 +204,82 @@ namespace UnityStandardAssets.Vehicles.Car
                         }
 
                     }
-                    GenerateDrivingDirections.PositionLeftRightCircles();
                     start = end;
+                    
+                }
+            }
+        }
 
+
+        public void SetNextTarget(Vector3 targetPosition)
+        {
+            this.targetPosition = targetPosition;
+        }
+
+        public void setHandbrake()
+        {
+            this.handbrake = 0f;
+        }
+
+        
+
+        public void SetAccelerationSteering()
+        {
+            Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
+            float dot = Vector3.Dot(transform.forward, directionToMove);
+            float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
+
+            if (dot > 0)
+            {
+                this.accelerationAmount=1f;
+                this.footbrake = 0f;
+            }
+            else
+            {
+                this.accelerationAmount = 0f; // this doesn't work because the acceleration is clamped to 0,1.
+                this.footbrake = -1f;
+            }
+
+            steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
+            this.steeringAmount = steeringAngle / m_Car.m_MaximumSteerAngle;
+        }
+        private void FixedUpdate()
+        {
+            // this is how you access information about the terrain from the map
+            //int i = terrain_manager.myInfo.get_i_index(transform.position.x);
+            //int j = terrain_manager.myInfo.get_j_index(transform.position.z);
+            //float grid_center_x = terrain_manager.myInfo.get_x_pos(i);
+            //float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
+
+            //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
+            setHandbrake();
+            Node n = graph.path[nodeNumber];
+
+            float targetDistanceMargin = 5f;
+            Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
+            Debug.Log("Next position is " + nextPosition);
+            SetNextTarget(nextPosition);
+            float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
+            if (distanceToTarget > targetDistanceMargin)
+            {
+                SetAccelerationSteering();
+                Debug.Log("Acceleration is set to " + accelerationAmount);
+                Debug.Log("Steering is set to " + steeringAmount);
+                m_Car.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
+            }
+            else //we reached the waypoint or end point
+            {
+                if (targetPosition == terrain_manager.myInfo.goal_pos) // we made it to the end, stop the car
+                {
+                    m_Car.Move(0f, 0f, 0f, 0f);
+                }
+                else // we arrived at a waypoint node, move to the next one
+                {
+                    nodeNumber += 1;
                 }
             }
 
-
+                   
 /*
             // this is how you access information about the terrain from a simulated laser range finder
             RaycastHit hit;
