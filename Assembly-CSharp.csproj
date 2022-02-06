@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -53,6 +53,9 @@
     <UnityVersion>2020.3.25f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Analyzer Include="/Applications/Visual Studio.app/Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.Unity/Analyzers/Microsoft.Unity.Analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Assets/Scrips/TrajectoryLogger.cs" />
     <Compile Include="Assets/Scrips/CarAI_PD_tracker.cs" />
     <Compile Include="Assets/Scrips/LookAt.cs" />
@@ -64,7 +67,6 @@
     <Compile Include="Assets/Scrips/BezierCurve.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/VirtualInput.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/Suspension.cs" />
-    <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarController.cs" />
     <Compile Include="Assets/Scrips/DroneController.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/BrakeLight.cs" />
     <Compile Include="Assets/Scrips/FollowDrone.cs" />
@@ -76,13 +78,11 @@
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/TiltInput.cs" />
     <Compile Include="Assets/Scrips/Node.cs" />
     <Compile Include="Assets/Scrips/RandomMovement.cs" />
-    <Compile Include="Assets/Scrips/PathFinder.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarAIControl.cs" />
     <Compile Include="Assets/Scrips/TerrainManager.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/PlatformSpecific/StandaloneInput.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/SkidTrail.cs" />
     <Compile Include="Assets/Scrips/RotateObject.cs" />
-    <Compile Include="Assets/Scrips/Graph.cs" />
     <Compile Include="Assets/Scrips/DroneAI.cs" />
     <Compile Include="Assets/Scrips/Driving.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarUserControl.cs" />

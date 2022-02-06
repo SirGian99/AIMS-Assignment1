@@ -1,8 +1,9 @@
 ﻿<Properties StartupConfiguration="{BE3D33A9-3307-CC60-20A4-E4476EBAB10D}|">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/CarAI_PD_tracker.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/DubinsMath.cs">
     <Files>
-      <File FileName="Assets/Scrips/CarAI_PD_tracker.cs" Line="31" Column="10" />
-      <File FileName="Assets/Scrips/CarAI.cs" Line="198" Column="82" />
+      <File FileName="Assets/Scrips/DubinsMath.cs" Line="6" Column="46" />
+      <File FileName="Assets/Scrips/CarAI.cs" />
+      <File FileName="Assets/Scrips/Driving.cs" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -14,7 +15,7 @@
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="36db5ddc-7ecc-4dab-acfa-b8a1bc4b942a" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="83938839-5232-4111-84aa-71644fba1156" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
