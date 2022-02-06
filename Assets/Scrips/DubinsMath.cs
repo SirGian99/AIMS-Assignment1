@@ -8,7 +8,7 @@ using System;
     {
         public static float driveDistance = 10f; // todo determine the drive distance per update
                                                  //private static float angularVelocity { get { return m_Car.transform} }
-        static Rigidbody rb;
+        public static Rigidbody rb;
         static float angularVelocity { get { return rb.angularVelocity.magnitude; } }
 
         private void Start()

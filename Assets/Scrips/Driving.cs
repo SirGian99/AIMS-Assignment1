@@ -113,7 +113,7 @@ public class GenerateDrivingDirections // Dubins
         }
     }
 
-    public static void PositionLeftRightCircles()
+    void PositionLeftRightCircles()
     {
         //Start pos
         sRight = DubinsMath.RightCircleCenter(startPos, startHeading);
