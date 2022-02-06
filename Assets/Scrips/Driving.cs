@@ -35,8 +35,6 @@ public class DubinsPath // OneDubinsPath
         this.tangent2 = tangent2;
 
         this.pathType = pathType;
-
-        DubinsMath dubinsMath = new DubinsMath();
     }
 
     public void SetIfTurningRight(bool segment1TurningRight, bool segment2TurningRight, bool segment3TurningRight)
@@ -113,7 +111,7 @@ public class GenerateDrivingDirections // Dubins
         }
     }
 
-    public static void PositionLeftRightCircles()
+    public void PositionLeftRightCircles()
     {
         //Start pos
         sRight = DubinsMath.RightCircleCenter(startPos, startHeading);
