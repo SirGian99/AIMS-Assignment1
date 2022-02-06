@@ -48,18 +48,26 @@ public class PathFinder : MonoBehaviour
                     path.Add(previous_node);
                     previous_node = previous_node.parent;
                 }
+                path.Add(previous_node);
                 path.Reverse();
                 graph.path = path;
-                foreach(Node n in graph.path)
+                /*foreach(Node n in graph.path)
                 {
                     //Debug.Log("Path, nodo (" + previous_node.i + "," + previous_node.j + ")");
-                }
+                }*/
             }
 
             foreach(Node neighbour in current.neighbours)
             {
                 if (!neighbour.walkable || closed_set.Contains(neighbour))
                     continue;
+                if(neighbour.i != current.i && neighbour.j != current.j )
+                {
+                    if (current.i < graph.nodes.GetLength(0) && current.j < graph.nodes.GetLength(1) && neighbour.i < graph.nodes.GetLength(0) && neighbour.j < graph.nodes.GetLength(1))
+                        if (!(graph.nodes[current.i, neighbour.j].walkable && graph.nodes[neighbour.i, current.j].walkable))
+                            
+                            continue;
+                }
                 float costToNeighb = current.gCost + getDistance(graph, current, neighbour);
                 if (costToNeighb < neighbour.gCost || !open_set.Contains(neighbour))
                 {
@@ -67,8 +75,8 @@ public class PathFinder : MonoBehaviour
                     neighbour.hCost = getDistance(graph, neighbour, goal_node);
                     neighbour.parent = current;
                     neighbour.heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
-                    String s = String.Format("Starting from [{0},{1}] to [{2},{3}] with angle {4}", current.i, current.j, neighbour.i, neighbour.j, neighbour.heading);
-                    Debug.Log(s);
+                    //String s = String.Format("Starting from [{0},{1}] to [{2},{3}] with angle {4}", current.i, current.j, neighbour.i, neighbour.j, neighbour.heading);
+                    //Debug.Log(s);
                     /*switch (current.heading){
                         case Node.Turn.A:
                             if (neighbour.i > current.i)
@@ -108,15 +116,114 @@ public class PathFinder : MonoBehaviour
 
     }
 
-    public static float getDistance(Graph graph, Node start, Node end)
+    public static float getDistance(Graph graph, Node start, Node end, bool neighbour = false)
     {
         int x_distance = Math.Abs(start.i - end.i);
         int z_distance = Math.Abs(start.j - end.j);
 
         float diagonal_cost = (float)(Math.Sqrt(Math.Pow(graph.x_unit,2) + Math.Pow(graph.z_unit,2)));
 
-        return diagonal_cost * (x_distance < z_distance ? x_distance : z_distance) + (x_distance >= z_distance ? x_distance * graph.x_unit : z_distance * graph.z_unit);
+        float addition = 1;
 
+        if (neighbour)
+        {
+            if (start.i != end.i && start.j != end.j && start.j < graph.nodes.GetLength(1) && end.j < graph.nodes.GetLength(1) && start.i < graph.nodes.GetLength(0) && end.i < graph.nodes.GetLength(0))
+            {
+                if (!graph.nodes[start.i, end.j].walkable)
+                {
+                    addition = 2;
+                    Debug.Log("ADDITION");
+                    if (!graph.nodes[start.j, end.i].walkable)
+                        addition += 100000;
+                }
+
+                if (!graph.nodes[start.j, end.i].walkable)
+                {
+                    addition = 2;
+                    Debug.Log("ADDITION 2");
+                    if (!graph.nodes[start.i, end.j].walkable)
+                        addition += 100000;
+                }
+            }
+
+        }
+
+        return addition * (diagonal_cost * (x_distance < z_distance ? x_distance : z_distance) + (x_distance >= z_distance ? x_distance * graph.x_unit : z_distance * graph.z_unit));
+
+    }
+
+    public static List<Node> pathUpsampling(List<Node> original_path, int mul_fact) {
+        if(original_path == null || original_path.Count==0)
+        return null;
+        List<Node> upsampled_path = new List<Node>();
+        for(int i = 0; i<original_path.Count-1; i++)
+        {
+            Node curr = original_path[i];
+            Node next = original_path[i + 1];
+            for(int j = 1; j <= mul_fact; j++)
+            {
+                float new_x_pos = (next.x_pos - curr.x_pos)/mul_fact * j + curr.x_pos;
+                float new_z_pos = (next.z_pos - curr.z_pos) / mul_fact * j + curr.z_pos;
+                Node new_node = new Node(-1, -1, new_x_pos, new_z_pos);
+                upsampled_path.Add(new_node);
+            }
+        }
+        
+        return upsampled_path;
+    }
+
+
+    public static List<Node> pathSmoothing(List<Node> path, float weight_data= 0.5f, float weight_smooth= 0.1f, float tolerance= 0.000001f)
+    {
+        List<Node> smoothed = new List<Node>();
+
+        foreach(Node n in path)
+        {
+            smoothed.Add(n.copy());
+        }
+        if (smoothed.Count != path.Count)
+        {
+            Debug.Log("ERROR!");
+        }
+
+        
+        float change = tolerance;
+
+
+        float x_i_x, y_i_x,y_prev_x, y_next_x, y_i_saved_x;
+        float x_i_z, y_i_z, y_prev_z , y_next_z, y_i_saved_z;
+
+        while (change >= tolerance)
+        {
+            change = 0;
+            for(int i = 1; i < smoothed.Count - 1; i++)
+            {
+                x_i_x = path[i].x_pos;
+                y_i_x = smoothed[i].x_pos;
+                y_prev_x = smoothed[i - 1].x_pos;
+                y_next_x = smoothed[i + 1].x_pos;
+                y_i_saved_x = y_i_x;
+                y_i_x += weight_data * (x_i_x - y_i_x) + weight_smooth * (y_next_x + y_prev_x - (2 * y_i_x));
+                smoothed[i].x_pos = y_i_x;
+                change += Math.Abs(y_i_x - y_i_saved_x);
+
+                x_i_z = path[i].z_pos;
+                y_i_z = smoothed[i].z_pos;
+                y_prev_z = smoothed[i - 1].z_pos;
+                y_next_z = smoothed[i + 1].z_pos;
+                y_i_saved_z = y_i_z;
+                y_i_z += weight_data * (x_i_z - y_i_z) + weight_smooth * (y_next_z + y_prev_z - (2 * y_i_z));
+                smoothed[i].z_pos = y_i_z;
+                change += Math.Abs(y_i_z - y_i_saved_z);
+            }
+        }
+
+        foreach(Node n in smoothed)
+        {
+            n.worldPosition = new Vector3(n.x_pos, 0, n.z_pos);
+        }
+
+        return smoothed;
     }
 
 }
