@@ -1,10 +1,5 @@
 ﻿<Properties StartupConfiguration="{BE3D33A9-3307-CC60-20A4-E4476EBAB10D}|">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/DubinsMath.cs">
-    <Files>
-      <File FileName="Assets/Scrips/DubinsMath.cs" Line="6" Column="46" />
-      <File FileName="Assets/Scrips/CarAI.cs" />
-      <File FileName="Assets/Scrips/Driving.cs" Line="1" Column="1" />
-    </Files>
+  <MonoDevelop.Ide.Workbench>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">

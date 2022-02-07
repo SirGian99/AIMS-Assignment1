@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{BE3D33A9-3307-CC60-20A4-E4476EBAB10D}</ProjectGuid>
+    <ProjectGuid>{B93BEEF5-AB65-B797-9BD3-0579F25B126F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -64,9 +64,9 @@
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/Mudguard.cs" />
     <Compile Include="Assets/Scrips/GameManager.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/ButtonHandler.cs" />
-    <Compile Include="Assets/Scrips/BezierCurve.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/VirtualInput.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/Suspension.cs" />
+    <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarController.cs" />
     <Compile Include="Assets/Scrips/DroneController.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/BrakeLight.cs" />
     <Compile Include="Assets/Scrips/FollowDrone.cs" />
@@ -78,11 +78,14 @@
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/TiltInput.cs" />
     <Compile Include="Assets/Scrips/Node.cs" />
     <Compile Include="Assets/Scrips/RandomMovement.cs" />
+    <Compile Include="Assets/Scrips/PathFinder.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarAIControl.cs" />
     <Compile Include="Assets/Scrips/TerrainManager.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/CrossPlatformInput/Scripts/PlatformSpecific/StandaloneInput.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/SkidTrail.cs" />
     <Compile Include="Assets/Scrips/RotateObject.cs" />
+    <Compile Include="Assets/Scrips/Graph.cs" />
+    <Compile Include="Assets/Scrips/BezierCurve.cs" />
     <Compile Include="Assets/Scrips/DroneAI.cs" />
     <Compile Include="Assets/Scrips/Driving.cs" />
     <Compile Include="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarUserControl.cs" />

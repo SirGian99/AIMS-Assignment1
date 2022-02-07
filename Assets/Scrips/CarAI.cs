@@ -105,7 +105,9 @@ namespace UnityStandardAssets.Vehicles.Car
             Debug.Log("Final block size: " + (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low) / z_scale);
 
 
-            graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale, z_scale);
+            //TODO OLD GIAN graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale, z_scale);
+            graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N*2, terrain_manager.myInfo.z_N*2);
+            Debug.Log("QUI: " + x_scale + " " + z_scale + " " + terrain_manager.myInfo.traversability.GetLength(0) + " " + terrain_manager.myInfo.traversability.GetLength(1) + " ");
 
             for (int i = 0; i < terrain_manager.myInfo.traversability.GetLength(0); i++)
             {
@@ -147,10 +149,10 @@ namespace UnityStandardAssets.Vehicles.Car
 
             up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 2),0.6f, 0.2f, 1E-09f);
             graph.path = PathFinder.pathSmoothing(graph.path);
-
+            graph.path = up_and_smooth;
             //dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
 
-            
+
             /*////TODO Path smoothr test
             List<Node> path_to_smooth = new List<Node>();
 
@@ -197,7 +199,7 @@ namespace UnityStandardAssets.Vehicles.Car
             {
                 for(int i=0; i<graph.path.Count-1; i++)
                 {
-                    Gizmos.color = Color.red;
+                    Gizmos.color = Color.black;
                     Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
                 }
                 
@@ -331,11 +333,17 @@ namespace UnityStandardAssets.Vehicles.Car
             Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
             float dot = Vector3.Dot(transform.forward, directionToMove);
             float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
+            this.steeringAmount = steeringAngle / m_Car.m_MaximumSteerAngle;
+            float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f: 1;
+            
 
-            if (dot > 0)
+            if (dot >= 0)
             {
-                this.accelerationAmount=1f;
-                this.footbrake = 0f;
+                
+                this.accelerationAmount= (30 - m_Car.CurrentSpeed)/30 * safe_steering;
+                this.footbrake = 0;
+                if (m_Car.CurrentSpeed >= 30)
+                    this.footbrake = (m_Car.CurrentSpeed - 30) / 10;
             }
             else
             {
@@ -344,7 +352,7 @@ namespace UnityStandardAssets.Vehicles.Car
             }
 
             steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
-            this.steeringAmount = steeringAngle / m_Car.m_MaximumSteerAngle;
+
         }
         private void FixedUpdate()
         {
@@ -368,13 +376,14 @@ namespace UnityStandardAssets.Vehicles.Car
                 SetAccelerationSteering();
                 Debug.Log("Acceleration is set to " + accelerationAmount);
                 Debug.Log("Steering is set to " + steeringAmount);
+                Debug.Log("Speed:" + m_Car.CurrentSpeed);
                 m_Car.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
             }
             else //we reached the waypoint or end point
             {
-                if (targetPosition == terrain_manager.myInfo.goal_pos) // we made it to the end, stop the car
+                if (inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit+graph.z_unit)/2)) // we made it to the end, stop the car
                 {
-                    m_Car.Move(0f, 0f, 0f, 0f);
+                    m_Car.Move(0f, 0f, 1f, 1f);
                 }
                 else // we arrived at a waypoint node, move to the next one
                 {
