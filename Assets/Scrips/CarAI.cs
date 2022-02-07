@@ -206,7 +206,7 @@ namespace UnityStandardAssets.Vehicles.Car
             PathFinder.findPath(graph, start_pos, goal_pos, 90); // path is accessible through graph.path
             //bez_path = PathFinder.bezierPath(graph.path, 2);
 
-            up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 2), 0.6f, 0.2f, 1E-09f);
+            up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 4), 0.6f, 0.2f, 1E-09f);
             graph.path = PathFinder.pathSmoothing(graph.path);
 
             final_path = up_and_smooth;

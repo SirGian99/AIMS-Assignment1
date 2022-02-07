@@ -72,6 +72,10 @@ public class PathFinder : MonoBehaviour
                 float costToNeighb = current.gCost + getDistance(graph, current, neighbour);
                 float neigh_heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
                 float additional_cost = Math.Abs(current.heading - neigh_heading) / 22.5f;
+                if (current.parent != null && current.parent.parent != null && Math.Abs(current.parent.parent.heading - neigh_heading) >=90)
+                {
+                    additional_cost *= 1.5f;
+                }
                 if(additional_cost != 0)
                 {
                     Debug.Log("Current h: " + current.heading + " Next h:" + neigh_heading + "Penalty: " + additional_cost);
