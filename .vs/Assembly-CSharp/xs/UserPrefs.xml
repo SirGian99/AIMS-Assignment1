@@ -1,28 +1,23 @@
-﻿<Properties StartupConfiguration="{B93BEEF5-AB65-B797-9BD3-0579F25B126F}|">
-  <MonoDevelop.Ide.Workbench>
+﻿<Properties>
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/Graph.cs">
     <Files>
-      <File FileName="Assets/Scrips/CarAI.cs" Line="39" Column="22" />
-      <File FileName="Assets/Scrips/PathFinder.cs" />
+      <File FileName="Assets/Scrips/CarAI.cs" Line="446" Column="41" />
+      <File FileName="Assets/Scrips/PathFinder.cs" Line="28" Column="60" />
       <File FileName="Assets/Scrips/DubinsMath.cs" />
       <File FileName="Assets/Scrips/Driving.cs" Line="4" Column="27" />
-      <File FileName="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarController.cs" Line="130" Column="21" />
+      <File FileName="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarController.cs" Line="162" Column="24" />
+      <File FileName="Assets/Scrips/Node.cs" Line="23" Column="65" />
+      <File FileName="Assets/Scrips/Graph.cs" Line="222" Column="61" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="Assembly-CSharp" expanded="True">
-            <Node name="Assets" expanded="True">
-              <Node name="OtherAssets" expanded="True">
-                <Node name="Standard Assets" expanded="True">
-                  <Node name="Vehicles" expanded="True">
-                    <Node name="Car" expanded="True">
-                      <Node name="Scripts" expanded="True" />
-                    </Node>
-                  </Node>
+            <Node name="Assembly-CSharp" expanded="True">
+              <Node name="Assets" expanded="True">
+                <Node name="Scrips" expanded="True">
+                  <Node name="Graph.cs" selected="True" />
                 </Node>
-              </Node>
-              <Node name="Scrips" expanded="True">
-                <Node name="CarAI.cs" selected="True" />
               </Node>
             </Node>
           </Node>
@@ -32,7 +27,6 @@
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="7ec7ebf7-ec34-47f7-bd2a-de0e8270c687" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>

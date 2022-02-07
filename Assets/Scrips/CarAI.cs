@@ -12,7 +12,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
     [RequireComponent(typeof(CarController))]
 
-    
+
 
     public class CarAI : MonoBehaviour
     {
@@ -30,10 +30,13 @@ namespace UnityStandardAssets.Vehicles.Car
         float footbrake;
         int nodeNumber;
         int stop = 50;
+        Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f);
+
 
 
         List<Node> up_and_smooth;
         List<Node> bez_path;
+        List<Node> final_path;
         Vector3 target_velocity;
         Vector3 target_position;
         Vector3 old_target_pos;
@@ -88,13 +91,62 @@ namespace UnityStandardAssets.Vehicles.Car
             graph = Graph.CreateGraph(terrain_manager.myInfo, (int)(granularity.x), (int)(granularity.z));
 
             */
-            int x_scale = terrain_manager.myInfo.x_N;
-            int z_scale = terrain_manager.myInfo.z_N;
-            float ratio = ((terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low) / x_scale) / ((terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low)/z_scale);
+            int x_scale = terrain_manager.myInfo.x_N * 2;
+            int z_scale = terrain_manager.myInfo.z_N * 2;
+            float x_len = (terrain_manager.myInfo.x_high - terrain_manager.myInfo.x_low);
+            float z_len = (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low);
+            float x_unit = x_len / x_scale;
+            float z_unit = z_len / z_scale;
+            float ratio = x_unit / z_unit;
+
+
+            Debug.Log("Variables. x_scale: " + x_scale + " z_scale: " + z_scale + " x_unit: " + x_unit + " z_unit: " + z_unit + " ratio: " + ratio);
+
+            if (x_unit < carSize.x * 2)
+            {
+                Debug.Log("Block width is too low");
+                x_scale /= 2;
+                x_unit *= 2;
+                /*
+                x_unit = carSize.x * 3;
+                x_scale = (int)(x_len / x_unit) * 2;
+                */
+            }
+            if (z_unit < carSize.z)
+            {
+                Debug.Log("Block height is too low");
+                z_scale /= 2;
+                z_unit *= 2;
+                /*
+                z_unit = carSize.z * 1.5f;
+                z_scale = (int)(z_len / z_unit) * 2;
+                */
+            }
+
+            Debug.Log("Variables After car rescaling. x_scale: " + x_scale + " z_scale: " + z_scale +  " x_unit: " + x_unit + " z_unit: " + z_unit + " ratio: " + ratio);
+
+            /*
+            if (z_unit < x_unit)
+            {
+                float old = z_scale; ///TODO Remove
+                z_scale = (int)(z_len * x_scale / x_len);
+                Debug.Log("Changing z_scale from " + old + " to " + z_scale);
+
+            }
+            else
+            {
+                float old = x_scale; ///TODO Remove
+                x_scale = (int)(x_len * z_scale / z_len);
+                Debug.Log("Changing x_scale from " + old + " to " + x_scale);
+
+            }
+            */
+            /*
+            ratio = x_unit / z_unit;
+
             if (ratio < 1)
             {
-                
-                ratio = (1 / ratio);
+                ratio = 1 / ratio;
                 z_scale *= (int)ratio;
                 Debug.Log("Rescaling z of " + ratio + " going from " + terrain_manager.myInfo.z_N + " to " + z_scale);
             }
@@ -103,11 +155,17 @@ namespace UnityStandardAssets.Vehicles.Car
                 x_scale *= (int)ratio;
                 Debug.Log("Rescaling x of " + ratio + " going from " + terrain_manager.myInfo.x_N + " to " + x_scale);
             }
+            */
+            x_unit = x_len / x_scale;
+            z_unit = z_len / z_scale;
 
-            Debug.Log("Final block size: " + (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low) / z_scale);
+
+            Debug.Log("Variables after. x_scale: " + x_scale + " z_scale: " + z_scale + " x_len: " + x_len + " z_len: " + z_len + " x_unit: " + x_unit + " z_unit: " + z_unit + " ratio: " + ratio);
+
+            Debug.Log("Final block size: [" + x_unit + "," + z_unit + "]");
 
 
-            graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale*2, z_scale*2);
+            graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale, z_scale);
             //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N*2, terrain_manager.myInfo.z_N*2);
             Debug.Log("QUI: " + x_scale + " " + z_scale + " " + terrain_manager.myInfo.traversability.GetLength(0) + " " + terrain_manager.myInfo.traversability.GetLength(1) + " ");
 
@@ -116,9 +174,9 @@ namespace UnityStandardAssets.Vehicles.Car
                 for (int j = 0; j < terrain_manager.myInfo.traversability.GetLength(1); j++)
                 {
                     traversability_string += (terrain_manager.myInfo.traversability[i, j] + " ");
-                    if (terrain_manager.myInfo.traversability[i, j] == 0 && terrain_manager.myInfo.traversability[i, j+1]==0)
+                    if (terrain_manager.myInfo.traversability[i, j] == 0 && terrain_manager.myInfo.traversability[i, j + 1] == 0)
                     {
-                        if (graph.AreConnected(new Node(i, j, 0,0), new Node(i, j+1, 0,0)))
+                        if (graph.AreConnected(new Node(i, j, 0, 0), new Node(i, j + 1, 0, 0)))
                         {
                             //Debug.Log("Connected");
                         }
@@ -126,7 +184,7 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             //Debug.Log("ERROR!!!!!");
                         }
-                      
+
                     }
                 }
                 traversability_string += "\n";
@@ -147,11 +205,15 @@ namespace UnityStandardAssets.Vehicles.Car
             }
 
             PathFinder.findPath(graph, start_pos, goal_pos); // path is accessible through graph.path
-            bez_path = PathFinder.bezierPath(graph.path, 2);
+            //bez_path = PathFinder.bezierPath(graph.path, 2);
 
-            up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 2),0.6f, 0.2f, 1E-09f);
+            up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 2), 0.6f, 0.2f, 1E-09f);
             graph.path = PathFinder.pathSmoothing(graph.path);
-            graph.path = up_and_smooth;
+
+            final_path = up_and_smooth;
+            Debug.Log("Percorsi. Up_n_sm: " + up_and_smooth + " Bez: " + bez_path + " normal: " + graph.path + " final: " + final_path);
+
+            //graph.path = up_and_smooth;
             //dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
 
 
@@ -185,11 +247,11 @@ namespace UnityStandardAssets.Vehicles.Car
                 foreach (Node n in graph.nodes) // graph.path 
                 {
                     Gizmos.color = (n.walkable) ? Color.blue : Color.red;
-                    if(graph.path != null && graph.path.Contains(n))
+                    if (graph.path != null && graph.path.Contains(n))
                         Gizmos.color = Color.white;
-                    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit*0.8f, 0.5f, graph.z_unit*0.8f));
+                    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
                 }
-                
+
 
                 Node currentNode = graph.getNodeFromPoint(transform.position);
                 //Debug.Log("CAR INITIAL NODE: [" + currentNode.i + "," + currentNode.j + "]");
@@ -197,14 +259,14 @@ namespace UnityStandardAssets.Vehicles.Car
                 Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
             }
 
-            if (graph.path != null)
+            if (final_path != null)
             {
-                for(int i=0; i<graph.path.Count-1; i++)
+                for (int i = 0; i < final_path.Count - 1; i++)
                 {
                     Gizmos.color = Color.black;
-                    Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
+                    Gizmos.DrawLine(final_path[i].worldPosition, final_path[i + 1].worldPosition);
                 }
-                
+
                 /*
                 List<Node> augmented_path = up_and_smooth;//PathFinder.pathUpsampling(graph.path, 8);
 
@@ -251,13 +313,13 @@ namespace UnityStandardAssets.Vehicles.Car
             float endHeading;
             float turnLeft = m_Car.m_MaximumSteerAngle * -1f;
             float turnRight = m_Car.m_MaximumSteerAngle;
-            
+
             foreach (Node n in graph.path)
             {
                 if (n != null)
                 {
                     //update the new ending position
-                    
+
                     end.x = n.x_pos;
                     end.y = start.y;
                     end.z = n.z_pos;
@@ -274,8 +336,8 @@ namespace UnityStandardAssets.Vehicles.Car
                         foreach (DubinsPath path in pathList)
                         {
                             Debug.Log("Current path type: " + path.pathType);
-                            switch(path.pathType)
-                            { 
+                            switch (path.pathType)
+                            {
                                 case GenerateDrivingDirections.PathType.LRL:
                                     m_Car.Move(turnLeft, 1f, 1f, 0f);
                                     m_Car.Move(turnRight, 1f, 1f, 0f);
@@ -306,13 +368,13 @@ namespace UnityStandardAssets.Vehicles.Car
                                     m_Car.Move(0f, 1f, 1f, 0f);
                                     m_Car.Move(turnRight, 1f, 1f, 0f);
                                     break;
-                             }
+                            }
 
                         }
 
                     }
                     start = end;
-                    
+
                 }
             }
         }
@@ -328,7 +390,7 @@ namespace UnityStandardAssets.Vehicles.Car
             this.handbrake = 0f;
         }
 
-        
+
 
         public void SetAccelerationSteering()
         {
@@ -337,13 +399,13 @@ namespace UnityStandardAssets.Vehicles.Car
             float dot = Vector3.Dot(transform.forward, directionToMove);
             float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
             this.steeringAmount = steeringAngle / m_Car.m_MaximumSteerAngle;
-            float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f: 1;
-            
+            float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
+
 
             if (dot >= 0)
             {
-                
-                this.accelerationAmount= (max_speed - m_Car.CurrentSpeed)/ max_speed * safe_steering;
+
+                this.accelerationAmount = (max_speed - m_Car.CurrentSpeed) / max_speed * safe_steering;
                 this.footbrake = 0;
                 if (m_Car.CurrentSpeed >= max_speed)
                     this.footbrake = (m_Car.CurrentSpeed - max_speed) / 10;
@@ -366,12 +428,22 @@ namespace UnityStandardAssets.Vehicles.Car
             //float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
 
             //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
-            if (stop>0)
+            if (stop > 0)
             {
                 setHandbrake();
-                Node n = graph.path[nodeNumber];
+                /*int closest_index = get_closest_node(transform.position, final_path)+1;
+                Debug.Log("Actual: " + nodeNumber + " Closest: " + closest_index);
+                if (closest_index > nodeNumber)
+                {
+                    nodeNumber = closest_index;
+                    Debug.Log("ECCOLO");
+                }
+                */
+                Node n = final_path[nodeNumber];
 
-                float targetDistanceMargin = 5f;
+
+                float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit* graph.x_unit *  + graph.z_unit* graph.z_unit) / 4;
+                targetDistanceMargin = 5f;
                 Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
                 Debug.Log("Next position is " + nextPosition);
                 SetNextTarget(nextPosition);
@@ -386,7 +458,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 else //we reached the waypoint or end point
                 {
-                    if (stop < 50 || inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit)/5*2)) // we made it to the end, stop the car
+                    if (stop < 50 || inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit) / 5 * 2)) // we made it to the end, stop the car
                     {
                         m_Car.Move(0f, 0f, 1f, 1f);
                         stop--;
@@ -400,9 +472,6 @@ namespace UnityStandardAssets.Vehicles.Car
             else
             {
                 m_Car.Move(0f, 0f, 0f, 1f);
-                Debug.Log("Car size: ["+ ((RectTransform)transform).rect.width + "," + ((RectTransform)transform).rect.height);
-
-
 
             }
 
@@ -448,22 +517,24 @@ namespace UnityStandardAssets.Vehicles.Car
 
         public bool inRange(Vector3 current_pos, Vector3 target_pos, float range)
         {
-            return (Math.Abs(current_pos.x - target_pos.x) + Math.Abs(current_pos.z - target_pos.z))<=range;
+            return (Math.Abs(current_pos.x - target_pos.x) + Math.Abs(current_pos.z - target_pos.z)) <= range;
         }
 
         public int get_closest_node(Vector3 position, List<Node> path)
         {
-            int closest = 0;
+            int closest = -1;
             float distance = 1000000000;
             int safe_exit = 5;
-            for (int i = 0; i<path.Count && safe_exit>0; i++)
+            position = new Vector3(position.x, 0, position.z);
+            for (int i = 0; i < path.Count && safe_exit > 0; i++)
             {
                 float new_distance = Vector3.Distance(position, path[i].worldPosition);
-                if (new_distance <= distance) {
+                if (new_distance <= distance)
+                {
                     distance = new_distance;
                     closest = i;
-                    }
-                else
+                }
+                else if (closest!=-1)
                 {
                     safe_exit--;
                 }
@@ -472,17 +543,18 @@ namespace UnityStandardAssets.Vehicles.Car
         }
 
 
-        public void GiancarloPID_attempt(){
+        public void GiancarloPID_attempt()
+        {
             if (up_and_smooth != null && node_index < up_and_smooth.Count)
             {
-                if(inRange(old_target_pos, new Vector3(rigidbody.position.x, 0, rigidbody.position.z), 1))
+                if (inRange(old_target_pos, new Vector3(rigidbody.position.x, 0, rigidbody.position.z), 1))
                     stuck_safe_exit--;
                 else
                     stuck_safe_exit = max_stuck_safe_exit;
 
                 old_target_pos = new Vector3(rigidbody.position.x, 0, rigidbody.position.z);
-              
-                
+
+
 
                 Vector3 target_position = up_and_smooth[node_index].worldPosition;
 
@@ -490,24 +562,24 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 int backup = get_closest_node(old_target_pos, up_and_smooth);
                 int tolerance = 10;
-                if(node_index-tolerance<backup && backup < node_index + tolerance && stuck_safe_exit!=0)
+                if (node_index - tolerance < backup && backup < node_index + tolerance && stuck_safe_exit != 0)
                 {
-          
+
                     target_position = up_and_smooth[backup].worldPosition;
                 }
 
-                if(stuck_safe_exit == 0)
+                if (stuck_safe_exit == 0)
                 {
                     Debug.Log("EIEIEI");
-                    for(int k = 0; k<100; k++)
+                    for (int k = 0; k < 100; k++)
                     {
-                        
+
                         m_Car.Move(0.1f, 1f, 0, 0);
                     }
 
                     return;
 
-                    target_position = up_and_smooth[node_index+2].worldPosition;
+                    target_position = up_and_smooth[node_index + 2].worldPosition;
                 }
                 target_velocity = (target_position - old_target_pos) / Time.fixedDeltaTime;
                 Debug.Log(node_index + ")Target: " + target_position + " Old:" + old_target_pos + " Vel: " + target_velocity + " Car_pos: " + rigidbody.position);
@@ -515,11 +587,11 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 // a PD-controller to get desired velocity
                 Vector3 position_error = target_position - transform.position;
-                Vector3 velocity_error = target_velocity/2 - rigidbody.velocity;
+                Vector3 velocity_error = target_velocity / 2 - rigidbody.velocity;
                 Vector3 desired_acceleration = k_p * position_error + k_d * velocity_error;
 
                 float steering = Vector3.Dot(desired_acceleration, transform.right);
-                float acceleration = Vector3.Dot(desired_acceleration, transform.forward)/2;
+                float acceleration = Vector3.Dot(desired_acceleration, transform.forward) / 2;
 
                 Debug.DrawLine(target_position, target_position + target_velocity, Color.red);
                 Debug.DrawLine(transform.position, transform.position + rigidbody.velocity, Color.blue);
@@ -527,7 +599,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 // this is how you control the car
                 Debug.Log("Steering:" + steering + " Acceleration:" + acceleration);
-                if (Math.Abs(steering) > m_Car.m_MaximumSteerAngle / 2 && stuck_safe_exit!= 0)
+                if (Math.Abs(steering) > m_Car.m_MaximumSteerAngle / 2 && stuck_safe_exit != 0)
                 {
                     print("HUGE: " + steering + " STuck: " + stuck_safe_exit);
                     slow_down_rate = 1.0001f - steering / m_Car.m_MaximumSteerAngle;
