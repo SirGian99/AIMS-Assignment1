@@ -46,6 +46,33 @@ public class PathFinder : MonoBehaviour
                 while (previous_node != start_node)
                 {
                     //Debug.Log("Coordinates (" + previous_node.i + "," + previous_node.j + ")");
+
+                    /*if (previous_node.parent != null)
+                    {
+                        Node back_1 = previous_node.parent;
+                        if(back_1.parent!= null)
+                        {
+                            Node back_2 = back_1.parent;
+
+                            if(back_2.parent != null)
+                            {
+                                Node back_3 = back_2.parent;
+                                if(Math.Abs(previous_node.x_pos - back_3.x_pos)< 2 * graph.z_unit) //Curva a U o U capovolta
+                                {
+                                    Debug.Log("Arrivo qui wow amazing");
+                                    Node first_interpol = graph.nodes[back_1.i, previous_node.j];
+                                    first_interpol.parent = back_1;
+                                    previous_node.parent = first_interpol;
+                                    Node second_interpol = graph.nodes[back_2.i, back_3.j];
+                                    second_interpol.parent = back_3;
+                                    back_2.parent = second_interpol;
+                                }
+                            }
+                        }
+
+                    }
+                    */
+
                     path.Add(previous_node);
                     previous_node = previous_node.parent;
                 }

@@ -31,6 +31,7 @@ namespace UnityStandardAssets.Vehicles.Car
         int nodeNumber;
         int stop = 50;
         Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f);
+        float starting_time;
 
 
 
@@ -391,15 +392,18 @@ namespace UnityStandardAssets.Vehicles.Car
 
 
 
-        public void SetAccelerationSteering()
+        public void SetAccelerationSteering(float current_heading=0, float lookahead_heading=0, int heading_steps=0)
         {
-            float max_speed = 35;
+            float max_speed = 65;
             Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
             float dot = Vector3.Dot(transform.forward, directionToMove);
             float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
             this.steeringAmount = steeringAngle / m_Car.m_MaximumSteerAngle;
             float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
 
+            float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
+
+            max_speed /= (heading_steps+1);
 
             if (dot >= 0)
             {
@@ -427,6 +431,8 @@ namespace UnityStandardAssets.Vehicles.Car
             //float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
 
             //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
+            if (nodeNumber == 0)
+                starting_time = Time.time;
             if (stop > 0)
             {
                 setHandbrake();
@@ -439,6 +445,22 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 */
                 Node n = final_path[nodeNumber];
+                int lookahead = 5;
+                Node lookahead_node;
+                int heading_steps=0;
+                if ((nodeNumber + 1) < final_path.Count)
+                {
+                    lookahead_node = final_path[nodeNumber + 1];
+
+                    heading_steps = n.heading != lookahead_node.heading ? 1 : 0;
+                    for (int j = 1; j < lookahead && nodeNumber+1+j<final_path.Count; j++)
+                    {
+                        if (lookahead_node.heading != final_path[nodeNumber + 1 + j].heading)
+                        {
+                            heading_steps++;
+                        }
+                    }
+                }
 
                 Debug.Log("ANGOLO: " + rigidbody.rotation);
 
@@ -450,7 +472,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
                 if (distanceToTarget > targetDistanceMargin)
                 {
-                    SetAccelerationSteering();
+                    SetAccelerationSteering(heading_steps);
                     Debug.Log("Acceleration is set to " + accelerationAmount);
                     Debug.Log("Steering is set to " + steeringAmount);
                     Debug.Log("Speed:" + m_Car.CurrentSpeed);
@@ -462,6 +484,11 @@ namespace UnityStandardAssets.Vehicles.Car
                     {
                         m_Car.Move(0f, 0f, 1f, 1f);
                         stop--;
+                        if (starting_time >= 0)
+                        {
+                            Debug.Log("REACHED IN " + (Time.time - starting_time) + " seconds");
+                            starting_time = -1;
+                }   
                     }
                     else // we arrived at a waypoint node, move to the next one
                     {
@@ -471,6 +498,7 @@ namespace UnityStandardAssets.Vehicles.Car
             }
             else
             {
+                
                 m_Car.Move(0f, 0f, 0f, 1f);
 
             }
