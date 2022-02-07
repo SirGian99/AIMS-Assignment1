@@ -15,13 +15,13 @@ public class Node
 
     public float gCost;
     public float hCost;
-    public float hybridAdditionalCost = 0; //to be used while using hybrid A*
+    public float hybridAdditionalCost = 1; //to be used while using hybrid A*
     public float wallClosenessCost = 0; 
     public float fCost {
         get
         {
             //Debug.Log("Node [" + i + "," + j + "] penalty " + wallClosenessCost +" fcost: " + (gCost + hCost + hybridAdditionalCost + wallClosenessCost));
-            return gCost + hCost + hybridAdditionalCost + wallClosenessCost;
+            return gCost * hybridAdditionalCost + hCost + wallClosenessCost;
         }
     }
     public Node parent;

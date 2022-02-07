@@ -203,8 +203,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawLine(old_wp, wp, Color.red, 100f);
                 old_wp = wp;
             }
-
-            PathFinder.findPath(graph, start_pos, goal_pos); // path is accessible through graph.path
+            PathFinder.findPath(graph, start_pos, goal_pos, 90); // path is accessible through graph.path
             //bez_path = PathFinder.bezierPath(graph.path, 2);
 
             up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 2), 0.6f, 0.2f, 1E-09f);
@@ -441,6 +440,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 */
                 Node n = final_path[nodeNumber];
 
+                Debug.Log("ANGOLO: " + rigidbody.rotation);
 
                 float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit* graph.x_unit *  + graph.z_unit* graph.z_unit) / 4;
                 targetDistanceMargin = 5f;

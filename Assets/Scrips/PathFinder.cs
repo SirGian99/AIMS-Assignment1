@@ -7,9 +7,10 @@ public class PathFinder : MonoBehaviour
 {
     public static float[,] headings = new float[,] { { 135f, 90f, 45f }, { 180f, 0f, 0f }, { 225f, 270f, 315f } };
 
-    public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position)
+    public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading)
     {
         Node start_node = graph.getNodeFromPoint(start_position);
+        start_node.heading = start_heading;
         Node goal_node = graph.getNodeFromPoint(goal_position);
         Debug.Log("Start i: " + start_node.i + "Start j:" + start_node.j);
         Debug.Log("Goal i: " + goal_node.i + "Goal j:" + goal_node.j);
@@ -69,12 +70,24 @@ public class PathFinder : MonoBehaviour
                             continue;
                 }
                 float costToNeighb = current.gCost + getDistance(graph, current, neighbour);
-                if (costToNeighb < neighbour.gCost || !open_set.Contains(neighbour))
+                float neigh_heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
+                float additional_cost = Math.Abs(current.heading - neigh_heading) / 22.5f;
+                if(additional_cost != 0)
+                {
+                    Debug.Log("Current h: " + current.heading + " Next h:" + neigh_heading + "Penalty: " + additional_cost);
+                }
+                additional_cost = additional_cost > 0 ? additional_cost : 1;
+
+               
+                
+
+                if (costToNeighb * additional_cost < neighbour.gCost || !open_set.Contains(neighbour))
                 {
                     neighbour.gCost = costToNeighb;
                     neighbour.hCost = getDistance(graph, neighbour, goal_node);
                     neighbour.parent = current;
-                    neighbour.heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
+                    neighbour.heading = neigh_heading;
+                    neighbour.hybridAdditionalCost = additional_cost;
                     //String s = String.Format("Starting from [{0},{1}] to [{2},{3}] with angle {4}", current.i, current.j, neighbour.i, neighbour.j, neighbour.heading);
                     //Debug.Log(s);
                     /*switch (current.heading){
