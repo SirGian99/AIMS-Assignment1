@@ -29,6 +29,8 @@ namespace UnityStandardAssets.Vehicles.Car
         float handbrake;
         float footbrake;
         int nodeNumber;
+        int stop = 50;
+
 
         List<Node> up_and_smooth;
         List<Node> bez_path;
@@ -105,8 +107,8 @@ namespace UnityStandardAssets.Vehicles.Car
             Debug.Log("Final block size: " + (terrain_manager.myInfo.z_high - terrain_manager.myInfo.z_low) / z_scale);
 
 
-            //TODO OLD GIAN graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale, z_scale);
-            graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N*2, terrain_manager.myInfo.z_N*2);
+            graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale*2, z_scale*2);
+            //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N*2, terrain_manager.myInfo.z_N*2);
             Debug.Log("QUI: " + x_scale + " " + z_scale + " " + terrain_manager.myInfo.traversability.GetLength(0) + " " + terrain_manager.myInfo.traversability.GetLength(1) + " ");
 
             for (int i = 0; i < terrain_manager.myInfo.traversability.GetLength(0); i++)
@@ -330,6 +332,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
         public void SetAccelerationSteering()
         {
+            float max_speed = 35;
             Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
             float dot = Vector3.Dot(transform.forward, directionToMove);
             float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
@@ -340,10 +343,10 @@ namespace UnityStandardAssets.Vehicles.Car
             if (dot >= 0)
             {
                 
-                this.accelerationAmount= (30 - m_Car.CurrentSpeed)/30 * safe_steering;
+                this.accelerationAmount= (max_speed - m_Car.CurrentSpeed)/ max_speed * safe_steering;
                 this.footbrake = 0;
-                if (m_Car.CurrentSpeed >= 30)
-                    this.footbrake = (m_Car.CurrentSpeed - 30) / 10;
+                if (m_Car.CurrentSpeed >= max_speed)
+                    this.footbrake = (m_Car.CurrentSpeed - max_speed) / 10;
             }
             else
             {
@@ -363,47 +366,59 @@ namespace UnityStandardAssets.Vehicles.Car
             //float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
 
             //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
-            setHandbrake();
-            Node n = graph.path[nodeNumber];
+            if (stop>0)
+            {
+                setHandbrake();
+                Node n = graph.path[nodeNumber];
 
-            float targetDistanceMargin = 5f;
-            Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
-            Debug.Log("Next position is " + nextPosition);
-            SetNextTarget(nextPosition);
-            float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
-            if (distanceToTarget > targetDistanceMargin)
-            {
-                SetAccelerationSteering();
-                Debug.Log("Acceleration is set to " + accelerationAmount);
-                Debug.Log("Steering is set to " + steeringAmount);
-                Debug.Log("Speed:" + m_Car.CurrentSpeed);
-                m_Car.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
+                float targetDistanceMargin = 5f;
+                Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
+                Debug.Log("Next position is " + nextPosition);
+                SetNextTarget(nextPosition);
+                float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
+                if (distanceToTarget > targetDistanceMargin)
+                {
+                    SetAccelerationSteering();
+                    Debug.Log("Acceleration is set to " + accelerationAmount);
+                    Debug.Log("Steering is set to " + steeringAmount);
+                    Debug.Log("Speed:" + m_Car.CurrentSpeed);
+                    m_Car.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
+                }
+                else //we reached the waypoint or end point
+                {
+                    if (stop < 50 || inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit)/5*2)) // we made it to the end, stop the car
+                    {
+                        m_Car.Move(0f, 0f, 1f, 1f);
+                        stop--;
+                    }
+                    else // we arrived at a waypoint node, move to the next one
+                    {
+                        nodeNumber += 1;
+                    }
+                }
             }
-            else //we reached the waypoint or end point
+            else
             {
-                if (inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit+graph.z_unit)/2)) // we made it to the end, stop the car
-                {
-                    m_Car.Move(0f, 0f, 1f, 1f);
-                }
-                else // we arrived at a waypoint node, move to the next one
-                {
-                    nodeNumber += 1;
-                }
+                m_Car.Move(0f, 0f, 0f, 1f);
+                Debug.Log("Car size: ["+ ((RectTransform)transform).rect.width + "," + ((RectTransform)transform).rect.height);
+
+
+
             }
 
-                   
-/*
-            // this is how you access information about the terrain from a simulated laser range finder
-            RaycastHit hit;
-            float maxRange = 50f;
-            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange))
-            {
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
-                //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
-            }
-*/
+
+            /*
+                        // this is how you access information about the terrain from a simulated laser range finder
+                        RaycastHit hit;
+                        float maxRange = 50f;
+                        if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange))
+                        {
+                            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                            //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
+                            //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
+                        }
+            */
 
             // this is how you control the car
             // public void Move(float steering, float accel, float footbrake, float handbrake)
@@ -414,12 +429,12 @@ namespace UnityStandardAssets.Vehicles.Car
 
 
 
-            
 
-            
-                        // this is how you access information about the terrain from a simulated laser range finder
-            
-            
+
+
+            // this is how you access information about the terrain from a simulated laser range finder
+
+
 
             // this is how you control the car
             // public void Move(float steering, float accel, float footbrake, float handbrake)

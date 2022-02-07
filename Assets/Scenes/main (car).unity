@@ -858,7 +858,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed951abcb196b40f38b3699dfa82c76c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrain_filename: text/terrainB
+  terrain_filename: text/terrainA
   myInfo:
     file_name: 
     x_low: 0
@@ -8387,6 +8387,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   terrain_manager_game_object: {fileID: 1358011048}
+  rigidbody: {fileID: 0}
+  k_p: 1.2
+  k_d: 0.26
 --- !u!1 &1788454091
 GameObject:
   m_ObjectHideFlags: 0

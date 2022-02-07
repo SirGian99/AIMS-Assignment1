@@ -1,17 +1,29 @@
-﻿<Properties StartupConfiguration="{BE3D33A9-3307-CC60-20A4-E4476EBAB10D}|">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/Driving.cs">
+﻿<Properties StartupConfiguration="{B93BEEF5-AB65-B797-9BD3-0579F25B126F}|">
+  <MonoDevelop.Ide.Workbench>
     <Files>
-      <File FileName="Assets/Scrips/CarAI.cs" Line="6" Column="22" />
+      <File FileName="Assets/Scrips/CarAI.cs" Line="39" Column="22" />
       <File FileName="Assets/Scrips/PathFinder.cs" />
-      <File FileName="Assets/Scrips/DubinsMath.cs" Line="1" Column="1" />
+      <File FileName="Assets/Scrips/DubinsMath.cs" />
       <File FileName="Assets/Scrips/Driving.cs" Line="4" Column="27" />
+      <File FileName="Assets/OtherAssets/Standard Assets/Vehicles/Car/Scripts/CarController.cs" Line="130" Column="21" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
-          <Node name="Assembly-CSharp" expanded="True" selected="True">
+          <Node name="Assembly-CSharp" expanded="True">
             <Node name="Assets" expanded="True">
-              <Node name="Scrips" expanded="True" />
+              <Node name="OtherAssets" expanded="True">
+                <Node name="Standard Assets" expanded="True">
+                  <Node name="Vehicles" expanded="True">
+                    <Node name="Car" expanded="True">
+                      <Node name="Scripts" expanded="True" />
+                    </Node>
+                  </Node>
+                </Node>
+              </Node>
+              <Node name="Scrips" expanded="True">
+                <Node name="CarAI.cs" selected="True" />
+              </Node>
             </Node>
           </Node>
         </State>
@@ -20,7 +32,7 @@
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="62917969-1bdf-4088-9b92-8d4916224152" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="7ec7ebf7-ec34-47f7-bd2a-de0e8270c687" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
