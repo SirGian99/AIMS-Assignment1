@@ -204,7 +204,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawLine(old_wp, wp, Color.red, 100f);
                 old_wp = wp;
             }
-            PathFinder.findPath(graph, start_pos, goal_pos, 90); // path is accessible through graph.path
+            PathFinder.findPath(graph, start_pos, goal_pos, transform.eulerAngles.y * Mathf.Deg2Rad); // path is accessible through graph.path
             //bez_path = PathFinder.bezierPath(graph.path, 2);
 
             up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 4), 0.6f, 0.2f, 1E-09f);
@@ -422,6 +422,7 @@ namespace UnityStandardAssets.Vehicles.Car
             steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
 
         }
+
         private void FixedUpdate()
         {
             // this is how you access information about the terrain from the map
@@ -470,7 +471,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.Log("Next position is " + nextPosition);
                 SetNextTarget(nextPosition);
                 float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
-                if (distanceToTarget > targetDistanceMargin)
+                if (distanceToTarget > targetDistanceMargin && stop==50)
                 {
                     SetAccelerationSteering(heading_steps);
                     Debug.Log("Acceleration is set to " + accelerationAmount);
@@ -480,9 +481,9 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 else //we reached the waypoint or end point
                 {
-                    if (stop < 50 || inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit) / 5 * 2)) // we made it to the end, stop the car
+                    if (inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit) / 5 * 2)) // we made it to the end, stop the car
                     {
-                        m_Car.Move(0f, 0f, 1f, 1f);
+                        m_Car.Move(0f, 0f, -1f, 1f);
                         stop--;
                         if (starting_time >= 0)
                         {
@@ -499,7 +500,7 @@ namespace UnityStandardAssets.Vehicles.Car
             else
             {
                 
-                m_Car.Move(0f, 0f, 0f, 1f);
+                m_Car.Move(0f, 0f, -1f, 1f);
 
             }
 
