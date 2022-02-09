@@ -32,6 +32,7 @@ namespace UnityStandardAssets.Vehicles.Car
         int stop = 50;
         Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f);
         float starting_time;
+        int curves = 0;
 
 
         //driving helpers
@@ -219,14 +220,28 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawLine(old_wp, wp, Color.red, 100f);
                 old_wp = wp;
             }
-            PathFinder.findPath(graph, start_pos, goal_pos, transform.eulerAngles.y * Mathf.Deg2Rad); // path is accessible through graph.path
+            PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
             //bez_path = PathFinder.bezierPath(graph.path, 2);
-
-            upsampled_path = PathFinder.pathUpsampling(graph.path, 4);
+            int upsampling_factor = 4;
+            upsampled_path = PathFinder.pathUpsampling(graph.path, upsampling_factor);
             up_and_smooth = PathFinder.pathSmoothing(upsampled_path, 0.6f, 0.2f, 1E-09f);
             //graph.path = PathFinder.pathSmoothing(graph.path);
 
             final_path = up_and_smooth;
+
+            for(int i = upsampling_factor; i<final_path.Count-1; i++)
+            {
+                int debug_oldc = curves;
+                curves += (int)(Math.Abs(final_path[i].heading - final_path[i + 1].heading) / 45);
+                Debug.Log("INITIAL Current h:" + final_path[i].heading + " next h: " + final_path[i + 1].heading);
+
+                if (debug_oldc != curves)
+                {
+                    ;
+                }
+            }
+            Debug.Log("Number of curves: " + curves);
+
             Debug.Log("Percorsi. Up_n_sm: " + up_and_smooth + " Bez: " + bez_path + " normal: " + graph.path + " final: " + final_path);
 
             foreach (Node n in graph.path)
@@ -494,18 +509,24 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 */
                 Node n = final_path[nodeNumber];
-                int lookahead = 15;
-                int u_curve_lookahead = 25;
+                int lookahead = (int)(curves/2.5);
+                int u_curve_lookahead = (int)(lookahead * 1.7);
                 //TODO
                 //we could tune it based on the number of curves in the path and theyr tipe (like, ucurves and so on)
                 //idea: use 2 lookah., one for normal speed and another one to detect u curves.
                 
                 Node lookahead_node;
                 int heading_steps=0;
+                int tolerance = 15;
+                float current_angle = (360 - transform.eulerAngles.y + 90) % 360;
+                Debug.Log("Current angle: " + current_angle);
+                //Debug.Log("Current angle x: " + transform.eulerAngles.x);
+                //Debug.Log("Current angle z: " + transform.eulerAngles.z);
 
                 if (u_curve)
                 {
-                    if (n.heading == u_curve_final_heading)
+                    Debug.Log("Current angle: " + transform.eulerAngles.y + " to_reach: " + u_curve_final_heading);
+                    if (n.heading == u_curve_final_heading || Math.Abs(u_curve_final_heading - current_angle) < tolerance )
                     {
                         u_curve = false; //finished the u_curve
                         Debug.Log("U curve end detected");
@@ -538,7 +559,7 @@ namespace UnityStandardAssets.Vehicles.Car
                             break;
                         }
                     }
-                    heading_steps += heading_difference / 45;
+                    //heading_steps += heading_difference / 45;
 
                     j--;
                     
