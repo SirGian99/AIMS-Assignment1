@@ -34,6 +34,10 @@ namespace UnityStandardAssets.Vehicles.Car
         float starting_time;
 
 
+        //driving helpers
+        private bool u_curve = false;
+        private float u_curve_final_heading = 0;
+
 
         List<Node> up_and_smooth;
         List<Node> bez_path;
@@ -157,6 +161,16 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.Log("Rescaling x of " + ratio + " going from " + terrain_manager.myInfo.x_N + " to " + x_scale);
             }
             */
+
+            if(x_unit > 1.5 * z_unit)
+            {
+                x_scale *= 2;
+            }
+            else if (z_unit > 1.5 * x_unit)
+            {
+                z_scale *= 2;
+            }
+
             x_unit = x_len / x_scale;
             z_unit = z_len / z_scale;
 
@@ -208,10 +222,15 @@ namespace UnityStandardAssets.Vehicles.Car
             //bez_path = PathFinder.bezierPath(graph.path, 2);
 
             up_and_smooth = PathFinder.pathSmoothing(PathFinder.pathUpsampling(graph.path, 4), 0.6f, 0.2f, 1E-09f);
-            graph.path = PathFinder.pathSmoothing(graph.path);
+            //graph.path = PathFinder.pathSmoothing(graph.path);
 
             final_path = up_and_smooth;
             Debug.Log("Percorsi. Up_n_sm: " + up_and_smooth + " Bez: " + bez_path + " normal: " + graph.path + " final: " + final_path);
+
+            foreach (Node n in graph.path)
+            {
+                Debug.Log("Original heading: " + n.heading);
+            }
 
             //graph.path = up_and_smooth;
             //dubinsPathGenerator = new GenerateDrivingDirections(m_Car);
@@ -403,7 +422,11 @@ namespace UnityStandardAssets.Vehicles.Car
 
             float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
 
-            max_speed /= (heading_steps+1);
+            if (u_curve)
+                max_speed = 10;
+            else
+                max_speed /= (heading_steps + 1);
+
 
             if (dot >= 0)
             {
@@ -446,38 +469,66 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 */
                 Node n = final_path[nodeNumber];
-                int lookahead = 5;
+                int lookahead = 10;
+                //TODO
+                //we could tune it based on the number of curves in the path and theyr tipe (like, ucurves and so on)
+                //idea: use 2 lookah., one for normal speed and another one to detect u curves.
+                
                 Node lookahead_node;
                 int heading_steps=0;
-                if ((nodeNumber + 1) < final_path.Count)
+
+                if (u_curve)
+                {
+                    if (n.heading == u_curve_final_heading)
+                        u_curve = false; //finished the u_curve
+                }
+
+                if ((nodeNumber + 1) < final_path.Count && !u_curve)
                 {
                     lookahead_node = final_path[nodeNumber + 1];
 
                     heading_steps = n.heading != lookahead_node.heading ? 1 : 0;
-                    for (int j = 1; j < lookahead && nodeNumber+1+j<final_path.Count; j++)
+                    int j = 1;
+                    for (; j < lookahead && nodeNumber+1+j<final_path.Count; j++)
                     {
+                        Debug.Log("Lookhaead node heading: " + lookahead_node.heading + " next_node_heading: " + final_path[nodeNumber + 1 + j].heading);
                         if (lookahead_node.heading != final_path[nodeNumber + 1 + j].heading)
                         {
                             heading_steps++;
                         }
                     }
+                    j--;
+                    int heading_difference = (int)(Math.Abs(n.heading - final_path[nodeNumber + 1 + j].heading));
+                    bool vertical = n.heading == 90 || n.heading == 270;
+                    Debug.Log("J: " + j + " Nodenumber: " + nodeNumber + " Current h: " + n.heading + " Final h: " + final_path[nodeNumber + 1 + j].heading);
+                    if (heading_difference >= 180 && (vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.x_unit*2 || !vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.z_unit * 2))
+                    { //the addition after the first && is probabily wrong
+                        u_curve = true;
+                        u_curve_final_heading = final_path[nodeNumber + 1 + j].heading;
+                        Debug.Log("U curve detected!");
+                    }
+                    else
+                        heading_steps += heading_difference / 45;
                 }
 
-                Debug.Log("ANGOLO: " + rigidbody.rotation);
+                Debug.Log("Heading steps: " + heading_steps);
 
-                float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit* graph.x_unit *  + graph.z_unit* graph.z_unit) / 4;
+                float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit* graph.x_unit *  + graph.z_unit* graph.z_unit) / 2;
                 targetDistanceMargin = 5f;
                 Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
                 Debug.Log("Next position is " + nextPosition);
                 SetNextTarget(nextPosition);
                 float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
-                if (distanceToTarget > targetDistanceMargin && stop==50)
+
+                if (get_closest_node(transform.position, final_path) <= nodeNumber+1  && distanceToTarget > targetDistanceMargin && !in_the_same_cell(transform.position, targetPosition, graph) && stop==50)
                 {
-                    SetAccelerationSteering(heading_steps);
+                    
+                    SetAccelerationSteering(heading_steps: heading_steps);
                     Debug.Log("Acceleration is set to " + accelerationAmount);
                     Debug.Log("Steering is set to " + steeringAmount);
                     Debug.Log("Speed:" + m_Car.CurrentSpeed);
                     m_Car.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
+
                 }
                 else //we reached the waypoint or end point
                 {
@@ -494,6 +545,7 @@ namespace UnityStandardAssets.Vehicles.Car
                     else // we arrived at a waypoint node, move to the next one
                     {
                         nodeNumber += 1;
+                        
                     }
                 }
             }
@@ -502,6 +554,10 @@ namespace UnityStandardAssets.Vehicles.Car
                 
                 m_Car.Move(0f, 0f, -1f, 1f);
 
+            }
+            if (m_Car.CurrentSpeed < 1 && stop == 50)
+            {
+                nodeNumber = get_closest_node(transform.position, final_path) + 1;
             }
 
 
@@ -697,6 +753,11 @@ namespace UnityStandardAssets.Vehicles.Car
         }
 
 
+        public bool in_the_same_cell(Vector3 pos1, Vector3 pos2, Graph graph)
+        {
+            return graph.getNodeFromPoint(pos1).Equals(graph.getNodeFromPoint(pos2));
+            
+        }
     }
 
 }

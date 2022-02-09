@@ -219,16 +219,16 @@ public class Graph{
                 if (current_j < 0 || current_j >= nodes.GetLength(1) || i==0 && j==0)
                     continue;
                 toReturn.Add(nodes[current_i, current_j]);
-                if (!(nodes[current_i, current_j].walkable))
+                if (!nodes[current_i, current_j].walkable)
                 {
                     if (node.i == current_i)
                     {
-                        node.wallClosenessCost += 10 * x_unit + 0.01f; //it means that the wall is above or behind, better go in the other direction
+                        node.wallClosenessCost += 12 * x_unit + 0.01f; //it means that the wall is above or behind, better go in the other direction
                     }
                     else if (node.j == current_j)
-                        node.wallClosenessCost += 10 * z_unit + 0.01f; //it means that the wall is next or before, better go in the other direction
+                        node.wallClosenessCost += 12 * z_unit + 0.01f; //it means that the wall is next or before, better go in the other direction
                     else
-                        node.wallClosenessCost += (float)Math.Sqrt(x_unit * x_unit + z_unit * z_unit); //it means the wall is diagonally placed, better go in the other direction
+                        node.wallClosenessCost += 2*(float)Math.Sqrt(x_unit * x_unit + z_unit * z_unit); //it means the wall is diagonally placed, better go in the other direction
                     if (print)
                         Debug.Log("Current node penalty: " + node.wallClosenessCost);
                 }

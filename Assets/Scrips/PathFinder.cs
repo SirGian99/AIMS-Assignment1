@@ -47,7 +47,7 @@ public class PathFinder : MonoBehaviour
                 {
                     //Debug.Log("Coordinates (" + previous_node.i + "," + previous_node.j + ")");
 
-                    /*if (previous_node.parent != null)
+                    if(previous_node.parent != null)
                     {
                         Node back_1 = previous_node.parent;
                         if(back_1.parent!= null)
@@ -57,21 +57,62 @@ public class PathFinder : MonoBehaviour
                             if(back_2.parent != null)
                             {
                                 Node back_3 = back_2.parent;
-                                if(Math.Abs(previous_node.x_pos - back_3.x_pos)< 2 * graph.z_unit) //Curva a U o U capovolta
+                                if (Math.Abs(Math.Abs(previous_node.x_pos - back_3.x_pos) - 3 * graph.x_unit)< 0.01f && previous_node.z_pos == back_3.z_pos &&  // |--|
+                                    Math.Abs(Math.Abs(previous_node.z_pos - back_1.z_pos) - graph.z_unit) < 0.01f && // 
+                                    Math.Abs(Math.Abs(back_1.x_pos - back_2.x_pos) - graph.x_unit) < 0.01f && back_1.z_pos == back_2.z_pos
+                                    )
                                 {
-                                    Debug.Log("Arrivo qui wow amazing");
-                                    Node first_interpol = graph.nodes[back_1.i, previous_node.j];
+                                    String s = String.Format("Amazing. Node1:[{0},{1}] Node2:[{2},{3}] Node3[{4},{5}] Node4[{6},{7}]",
+                                        previous_node.i, previous_node.j, back_1.i, back_1.j, back_2.i, back_2.j, back_3.i, back_3.j);
+                                    //TODO UNCOMMENT THIS!!!
+                                    /*Debug.Log(s);
+                                    Node first_interpol = graph.nodes[previous_node.i, back_1.j];
                                     first_interpol.parent = back_1;
                                     previous_node.parent = first_interpol;
-                                    Node second_interpol = graph.nodes[back_2.i, back_3.j];
+                                    Node second_interpol = graph.nodes[back_3.i, back_2.j];
                                     second_interpol.parent = back_3;
                                     back_2.parent = second_interpol;
+                                    */
+                                    
+                                }
+                                
+                                /*
+                                if (previous_node.z_pos == back_3.z_pos) {
+                                    Debug.Log("Amazing 0 Distanza: " + Math.Abs(previous_node.x_pos - back_3.x_pos) + " 3*x_unit = " + 3 * graph.x_unit);
+                                    if(Math.Abs(previous_node.x_pos - back_3.x_pos) - 3 * graph.x_unit < 0.01f) //due to float precision
+                                    {
+                                        Debug.Log("Arrivo qui wow amazing 1");
+                                        if (Math.Abs(previous_node.z_pos - back_1.z_pos) - graph.z_unit < 0.01f)
+                                        {
+                                            Debug.Log("Amazing 2");
+                                        }
+
+                                        if (Math.Abs(back_1.x_pos - back_2.x_pos) - graph.x_unit <0.01f && back_1.z_pos == back_2.z_pos)
+                                        {
+                                            Debug.Log("Amazing 3");
+                                        }
+                                    }
+                                }
+                                */
+                                    /*if(Math.Abs(previous_node.x_pos - back_3.x_pos) <  graph.z_unit && previous_node.z_pos == back_3.z_pos && previous_node.x_pos != back_1.x_pos && back_1.z_pos == back_2.z_pos) //Curva a U o U capovolta
+                                    {
+                                        Debug.Log("Arrivo qui wow amazing");
+                                        /*Node first_interpol = graph.nodes[back_1.i, previous_node.j];
+                                        first_interpol.parent = back_1;
+                                        previous_node.parent = first_interpol;
+                                        Node second_interpol = graph.nodes[back_2.i, back_3.j];
+                                        second_interpol.parent = back_3;
+                                        back_2.parent = second_interpol;
+
+                                    }
+                                    */
+
+
                                 }
                             }
-                        }
 
                     }
-                    */
+                    
 
                     path.Add(previous_node);
                     previous_node = previous_node.parent;
@@ -209,6 +250,7 @@ public class PathFinder : MonoBehaviour
                 float new_x_pos = (next.x_pos - curr.x_pos)/mul_fact * j + curr.x_pos;
                 float new_z_pos = (next.z_pos - curr.z_pos) / mul_fact * j + curr.z_pos;
                 Node new_node = new Node(-1, -1, new_x_pos, new_z_pos);
+                new_node.heading = curr.heading;
                 upsampled_path.Add(new_node);
             }
         }
