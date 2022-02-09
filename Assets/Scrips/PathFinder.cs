@@ -64,15 +64,15 @@ public class PathFinder : MonoBehaviour
                                 {
                                     String s = String.Format("Amazing. Node1:[{0},{1}] Node2:[{2},{3}] Node3[{4},{5}] Node4[{6},{7}]",
                                         previous_node.i, previous_node.j, back_1.i, back_1.j, back_2.i, back_2.j, back_3.i, back_3.j);
-                                    //TODO UNCOMMENT THIS!!!
-                                    /*Debug.Log(s);
+                                    //TODO COMMENT THIS!!!
+                                    Debug.Log(s);
                                     Node first_interpol = graph.nodes[previous_node.i, back_1.j];
                                     first_interpol.parent = back_1;
                                     previous_node.parent = first_interpol;
                                     Node second_interpol = graph.nodes[back_3.i, back_2.j];
                                     second_interpol.parent = back_3;
                                     back_2.parent = second_interpol;
-                                    */
+                                    
                                     
                                 }
                                 
