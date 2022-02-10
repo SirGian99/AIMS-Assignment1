@@ -131,4 +131,88 @@ public class OldStuff : MonoBehaviour
     }
     */
 
+
+    /*
+
+
+    private void MoveDubins()
+        {
+            //We need some information to use Dubins paths, start_pos, next position in the path, and headings.
+            Vector3 start;
+            Vector3 end;
+            start = transform.position;
+            float startHeading = transform.eulerAngles.y * Mathf.Deg2Rad;
+            float endHeading;
+            float turnLeft = m_Car.m_MaximumSteerAngle * -1f;
+            float turnRight = m_Car.m_MaximumSteerAngle;
+
+            foreach (Node n in graph.path)
+            {
+                if (n != null)
+                {
+                    //update the new ending position
+
+                    end.x = n.x_pos;
+                    end.y = start.y;
+                    end.z = n.z_pos;
+                    endHeading = n.heading;
+
+                    List<DubinsPath> pathList = dubinsPathGenerator.makeManyDubinsPaths(
+                        start,
+                        startHeading,
+                        end,
+                        endHeading);
+
+                    if (pathList.Count > 0)
+                    {
+                        foreach (DubinsPath path in pathList)
+                        {
+                            Debug.Log("Current path type: " + path.pathType);
+                            switch (path.pathType)
+                            {
+                                case GenerateDrivingDirections.PathType.LRL:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RLR:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.LSR:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.LSL:
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RSL:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
+                                    break;
+                                case GenerateDrivingDirections.PathType.RSR:
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    m_Car.Move(0f, 1f, 1f, 0f);
+                                    m_Car.Move(turnRight, 1f, 1f, 0f);
+                                    break;
+                            }
+
+                        }
+
+                    }
+                    start = end;
+
+                }
+            }
+        }
+      
+     
+     */
+
+
 }

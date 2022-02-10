@@ -361,82 +361,6 @@ namespace UnityStandardAssets.Vehicles.Car
 
         }
 
-        private void MoveDubins()
-        {
-            //We need some information to use Dubins paths, start_pos, next position in the path, and headings.
-            Vector3 start;
-            Vector3 end;
-            start = transform.position;
-            float startHeading = transform.eulerAngles.y * Mathf.Deg2Rad;
-            float endHeading;
-            float turnLeft = m_Car.m_MaximumSteerAngle * -1f;
-            float turnRight = m_Car.m_MaximumSteerAngle;
-
-            foreach (Node n in graph.path)
-            {
-                if (n != null)
-                {
-                    //update the new ending position
-
-                    end.x = n.x_pos;
-                    end.y = start.y;
-                    end.z = n.z_pos;
-                    endHeading = n.heading;
-
-                    List<DubinsPath> pathList = dubinsPathGenerator.makeManyDubinsPaths(
-                        start,
-                        startHeading,
-                        end,
-                        endHeading);
-
-                    if (pathList.Count > 0)
-                    {
-                        foreach (DubinsPath path in pathList)
-                        {
-                            Debug.Log("Current path type: " + path.pathType);
-                            switch (path.pathType)
-                            {
-                                case GenerateDrivingDirections.PathType.LRL:
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    break;
-                                case GenerateDrivingDirections.PathType.RLR:
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    break;
-                                case GenerateDrivingDirections.PathType.LSR:
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    m_Car.Move(0f, 1f, 1f, 0f);
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    break;
-                                case GenerateDrivingDirections.PathType.LSL:
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    m_Car.Move(0f, 1f, 1f, 0f);
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    break;
-                                case GenerateDrivingDirections.PathType.RSL:
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    m_Car.Move(0f, 1f, 1f, 0f);
-                                    m_Car.Move(turnLeft, 1f, 1f, 0f);
-                                    break;
-                                case GenerateDrivingDirections.PathType.RSR:
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    m_Car.Move(0f, 1f, 1f, 0f);
-                                    m_Car.Move(turnRight, 1f, 1f, 0f);
-                                    break;
-                            }
-
-                        }
-
-                    }
-                    start = end;
-
-                }
-            }
-        }
-
 
         public void SetNextTarget(Vector3 targetPosition)
         {
@@ -592,6 +516,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 {
 
                     SetAccelerationSteering(heading_steps: heading_steps);
+                    avoid_obstacles();
                     Debug.Log("Acceleration is set to " + accelerationAmount);
                     Debug.Log("Steering is set to " + steeringAmount);
                     Debug.Log("Speed:" + m_Car.CurrentSpeed);
@@ -779,6 +704,53 @@ namespace UnityStandardAssets.Vehicles.Car
                 current_node_index++;
             }
             return true;
+        }
+
+        private void avoid_obstacles()
+        {
+            RaycastHit hit;
+            Vector3 maxRange = carSize*1.2f;
+            
+            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.accelerationAmount *= 0.5f;
+                this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
+                Debug.Log("Frontal collision");
+            }
+
+            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.accelerationAmount = 1;
+                this.footbrake = 0;
+                Debug.Log("Back collision");
+
+            }
+
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.accelerationAmount *= 0.7f;
+                this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+                this.steeringAmount += -0.5f;
+                Debug.Log("Right collision");
+
+            }
+
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.accelerationAmount *= 0.7f;
+                this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+                this.steeringAmount += 0.5f;
+                Debug.Log("Left collision");
+
+            }
         }
 
     }
