@@ -56,6 +56,7 @@
      <Compile Include="Assets\Scrips\GameManager.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\ButtonHandler.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\VirtualInput.cs" />
+     <Compile Include="Assets\Scrips\OldStuff.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Scripts\Suspension.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Scripts\CarController.cs" />
      <Compile Include="Assets\Scrips\DroneController.cs" />
@@ -89,7 +90,6 @@
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\MobileControlRig.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Scripts\CarAudio.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\AxisTouchButton.cs" />
-     <Compile Include="Assets\Scrips\OldStuff.cs" />
      <None Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\CarGuidelines.txt" />
      <None Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Shaders\ReflectiveDiffuseSpecTransp.shader" />

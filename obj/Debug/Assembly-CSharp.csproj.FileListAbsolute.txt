@@ -1,0 +1,2 @@
+/Users/gian/Documents/AIMS-Assignment1/obj/Debug/Assembly-CSharp.csproj.AssemblyReference.cache
+/Users/gian/Documents/AIMS-Assignment1/obj/Debug/Assembly-CSharp.csproj.CoreCompileInputs.cache

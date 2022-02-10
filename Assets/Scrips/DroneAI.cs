@@ -16,13 +16,11 @@ public class DroneAI : MonoBehaviour
 
     public Graph graph;
     private Vector3 targetPosition;
-    float steeringAmount;
-    float accelerationAmount;
-    float handbrake;
-    float footbrake;
+    float h_accel;
+    float v_accel;
     int nodeNumber;
     int stop = 50;
-    Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f); //TODO Find drone size
+    Vector3 droneSize = new Vector3(3f, 3f, 3f); //TODO Find drone size
     float starting_time;
     int curves = 0;
 
@@ -76,7 +74,7 @@ public class DroneAI : MonoBehaviour
 
 
         Debug.Log("Variables. x_scale: " + x_scale + " z_scale: " + z_scale + " x_unit: " + x_unit + " z_unit: " + z_unit + " ratio: " + ratio);
-        if (x_unit < carSize.x * 2)
+        if (x_unit < droneSize.x * 2)
         {
             Debug.Log("Block width is too low");
             x_scale /= 2;
@@ -86,7 +84,7 @@ public class DroneAI : MonoBehaviour
             x_scale = (int)(x_len / x_unit) * 2;
             */
         }
-        if (z_unit < carSize.z)
+        if (z_unit < droneSize.z)
         {
             Debug.Log("Block height is too low");
             z_scale /= 2;
@@ -97,13 +95,13 @@ public class DroneAI : MonoBehaviour
             */
         }
 
-        if (x_unit > carSize.x * 4)
+        if (x_unit > droneSize.x * 4)
         {
             x_scale *= 2;
             x_unit /= 2;
 
         }
-        if (z_unit > carSize.z * 4)
+        if (z_unit > droneSize.z * 4)
         {
             z_scale *= 4;
             z_unit /= 4;
@@ -275,47 +273,160 @@ public class DroneAI : MonoBehaviour
         this.targetPosition = targetPosition;
     }
 
-    
-    public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
+
+    public void SetAcceleration(int heading_steps, Node target)
     {
         float max_speed = 65;
-        Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
+        int slowdown_factor_h = 1;
+        int slowdown_factor_v = 1;
+
+        
+        Vector3 directionToMove = -(this.targetPosition - transform.position);
+        float x_dot = Vector3.Dot(directionToMove, new Vector3(m_Drone.acceleration.x, 0, 0));
+        float z_dot = Vector3.Dot(directionToMove, new Vector3(0,0,m_Drone.acceleration.z));
+
+        Debug.Log("Curr acc: " + m_Drone.acceleration + " Direction: " + directionToMove + " x_dot:" + x_dot + " z_dot: " + z_dot);
+        directionToMove = directionToMove.normalized;
+        if (x_dot < -0.5)
+        {
+            slowdown_factor_h = -heading_steps-1;
+        }
+
+        if (z_dot < -0.5)
+        {
+            slowdown_factor_v = -heading_steps-1;
+        }
 
         float dot = Vector3.Dot(transform.forward, directionToMove);
-        float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
-        this.steeringAmount = steeringAngle / m_Drone.m_MaximumSteerAngle;
-        float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
+        float direction = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
+        Vector3 final_acceleration;
 
-        float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
-        if (u_curve)
-        {
-            max_speed = 50;
-            if (m_Drone.CurrentSpeed > max_speed * 0.6)
-            {
-                this.handbrake = 1;
-            }
-        }
-        else
-            max_speed *= (float)Math.Exp(-heading_steps / 2);
+      
 
+        h_accel = m_Drone.max_acceleration * directionToMove.x / slowdown_factor_h;
+        v_accel = m_Drone.max_acceleration * directionToMove.z / slowdown_factor_v;
+        //Debug.Log("Curr acc: (" + h_accel + " , " + v_accel + ") Direction to move: " + directionToMove + "Max acc: " + m_Drone.max_acceleration);
+        //Debug.Log("Curr speed: " + m_Drone.velocity.magnitude + " Max speed: " + m_Drone.max_speed);
 
-        if (dot >= 0)
+        return;
+        switch (target.heading)
         {
 
-            this.accelerationAmount = (max_speed - m_Drone.CurrentSpeed) / max_speed * safe_steering;
-            this.footbrake = 0;
-            if (m_Drone.CurrentSpeed >= max_speed)
-                this.footbrake = (m_Drone.CurrentSpeed - max_speed) / 10;
-        }
-        else
-        {
-            this.accelerationAmount = 0f; // this doesn't work because the acceleration is clamped to 0,1.
-            this.footbrake = -1f;
-        }
+            case 0:
+                h_accel = m_Drone.max_acceleration*slowdown_factor_h;
+                v_accel = 0;
+                if (Math.Abs(m_Drone.velocity.z) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+                    v_accel = -m_Drone.acceleration.z;
+                }
+                break;
+            case 90:
+                v_accel = m_Drone.max_acceleration* slowdown_factor_v;
+                h_accel = 0;
+                if (Math.Abs(m_Drone.velocity.x) > 0.3)
+                {
+                    Debug.Log("Decelerate");
 
-        steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
+                    h_accel = -m_Drone.acceleration.x;
+                }
+                break;
+            case 180:
+                h_accel = - m_Drone.max_acceleration* slowdown_factor_h;
+                v_accel = 0;
+                if (Math.Abs(m_Drone.velocity.z) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+
+                    v_accel = -m_Drone.acceleration.z;
+                }
+                break;
+            case 270:
+                v_accel = -m_Drone.max_acceleration* slowdown_factor_v;
+                h_accel = 0;
+                if (Math.Abs(m_Drone.velocity.x) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+
+                    h_accel = -m_Drone.acceleration.x;
+                }
+                break;
+            case 45:
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel*= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 135:
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 225:
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 315:
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+
+        }
 
     }
+
+    //public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
+    //{
+    //    float max_speed = 65;
+    //    Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
+
+    //    float dot = Vector3.Dot(transform.forward, directionToMove);
+    //    float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
+    //    this.steeringAmount = steeringAngle / m_Drone.m_MaximumSteerAngle;
+    //    float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
+
+    //    float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
+    //    if (u_curve)
+    //    {
+    //        max_speed = 50;
+    //        if (m_Drone.CurrentSpeed > max_speed * 0.6)
+    //        {
+    //            this.handbrake = 1;
+    //        }
+    //    }
+    //    else
+    //        max_speed *= (float)Math.Exp(-heading_steps / 2);
+
+
+    //    if (dot >= 0)
+    //    {
+
+    //        this.accelerationAmount = (max_speed - m_Drone.CurrentSpeed) / max_speed * safe_steering;
+    //        this.footbrake = 0;
+    //        if (m_Drone.CurrentSpeed >= max_speed)
+    //            this.footbrake = (m_Drone.CurrentSpeed - max_speed) / 10;
+    //    }
+    //    else
+    //    {
+    //        this.accelerationAmount = 0f; // this doesn't work because the acceleration is clamped to 0,1.
+    //        this.footbrake = -1f;
+    //    }
+
+    //    steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
+
+    //}
+
+
+
     private void FixedUpdate()
     {
         if (nodeNumber == 0)
@@ -394,20 +505,21 @@ public class DroneAI : MonoBehaviour
 
             if (get_closest_node(transform.position, final_path, nodeNumber) <= nodeNumber + 1 && distanceToTarget > targetDistanceMargin && !in_the_same_cell(transform.position, targetPosition, graph) && stop == 50)
             {
-
-                SetAccelerationSteering(heading_steps: heading_steps);
-                avoid_obstacles(heading_steps > 0);
-                Debug.Log("Acceleration is set to " + accelerationAmount);
-                Debug.Log("Steering is set to " + steeringAmount);
-                Debug.Log("Speed:" + m_Drone.CurrentSpeed);
-                m_Drone.Move(steeringAmount, accelerationAmount, footbrake, handbrake);
+                SetAcceleration(heading_steps: heading_steps, final_path[Math.Min(nodeNumber+3, final_path.Count-1)]);
+                //SetAccelerationSteering(heading_steps: heading_steps);
+                //avoid_obstacles(heading_steps > 0);
+                Debug.Log("Acceleration is set to " + m_Drone.acceleration.magnitude);
+                Debug.Log("Accel Theta" + Math.Atan(v_accel/h_accel) * Mathf.Rad2Deg);
+                Debug.Log("Speed:" + m_Drone.velocity.magnitude);
+                Debug.Log("Speed theta: " + Math.Atan(m_Drone.velocity.z / m_Drone.velocity.x) * Mathf.Rad2Deg);
+                m_Drone.Move(h_accel, v_accel);
 
             }
             else //we reached the waypoint or end point
             {
                 if (inRange(targetPosition, terrain_manager.myInfo.goal_pos, (graph.x_unit + graph.z_unit) / 5 * 2)) // we made it to the end, stop the car
                 {
-                    m_Drone.Move(0f, 0f, -1f, 1f);
+                    m_Drone.Move(-m_Drone.acceleration.x, -m_Drone.acceleration.z);
                     stop--;
                     if (starting_time >= 0)
                     {
@@ -442,7 +554,7 @@ public class DroneAI : MonoBehaviour
         else
         {
 
-            m_Drone.Move(0f, 0f, -1f, 1f);
+            m_Drone.Move(0f, 0f);
 
         }
 
@@ -575,7 +687,6 @@ public class DroneAI : MonoBehaviour
                 if (Physics.Raycast(node.worldPosition, Vector3.down, maxRange))
                 {
                     return false;
-
                 }
             }
 
@@ -584,73 +695,73 @@ public class DroneAI : MonoBehaviour
         return true;
     }
 
-    private void avoid_obstacles(bool curve_approaching = false)
-    {
-        RaycastHit hit;
-        Vector3 maxRange = carSize * 1.2f;
-        bool had_hit = false;
+    //private void avoid_obstacles(bool curve_approaching = false)
+    //{
+    //    RaycastHit hit;
+    //    Vector3 maxRange = carSize * 1.2f;
+    //    bool had_hit = false;
 
-        if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
-        {
-            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-            this.accelerationAmount *= 0.5f;
-            this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
-            Debug.Log("Frontal collision, distance: " + hit.distance);
-            had_hit = true;
+    //    if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+    //    {
+    //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+    //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+    //        this.accelerationAmount *= 0.5f;
+    //        this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
+    //        Debug.Log("Frontal collision, distance: " + hit.distance);
+    //        had_hit = true;
 
-            if (hit.distance < 5) //recovery from frontal hit
-            {
-                Debug.Log("Collision STOP");
-                this.accelerationAmount = 0;
-                this.footbrake = -1;
-                this.steeringAmount *= -1;
-                this.handbrake = 0;
-            }
-        }
+    //        if (hit.distance < 5) //recovery from frontal hit
+    //        {
+    //            Debug.Log("Collision STOP");
+    //            this.accelerationAmount = 0;
+    //            this.footbrake = -1;
+    //            this.steeringAmount *= -1;
+    //            this.handbrake = 0;
+    //        }
+    //    }
 
-        /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
-        {
-            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-            this.accelerationAmount = 1;
-            this.footbrake = 0;
-            Debug.Log("Back collision");
-            had_hit = true;
+    //    /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+    //    {
+    //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+    //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+    //        this.accelerationAmount = 1;
+    //        this.footbrake = 0;
+    //        Debug.Log("Back collision");
+    //        had_hit = true;
 
-        }*/
+    //    }*/
 
-        if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
-        {
-            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-            this.accelerationAmount *= 0.7f;
-            this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-            this.steeringAmount += -0.5f;
-            Debug.Log("Right collision");
-            had_hit = true;
+    //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
+    //    {
+    //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+    //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+    //        this.accelerationAmount *= 0.7f;
+    //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+    //        this.steeringAmount += -0.5f;
+    //        Debug.Log("Right collision");
+    //        had_hit = true;
 
 
-        }
+    //    }
 
-        if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
-        {
-            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-            this.accelerationAmount *= 0.7f;
-            this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-            this.steeringAmount += 0.5f;
-            Debug.Log("Left collision");
+    //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
+    //    {
+    //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+    //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+    //        this.accelerationAmount *= 0.7f;
+    //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+    //        this.steeringAmount += 0.5f;
+    //        Debug.Log("Left collision");
 
-            had_hit = true;
-        }
+    //        had_hit = true;
+    //    }
 
-        if (!had_hit && !curve_approaching)
-        {
-            this.accelerationAmount *= 1.25f;
-            Debug.Log("Not hit speed");
-        }
-    }
+    //    if (!had_hit && !curve_approaching)
+    //    {
+    //        this.accelerationAmount *= 1.25f;
+    //        Debug.Log("Not hit speed");
+    //    }
+    //}
 
     // Update is called once per frame
     void Update()
