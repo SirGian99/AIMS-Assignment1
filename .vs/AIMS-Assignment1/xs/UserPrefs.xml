@@ -1,32 +1,32 @@
-﻿<Properties>
+﻿<Properties StartupConfiguration="{BE3D33A9-3307-CC60-20A4-E4476EBAB10D}|">
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scrips/DroneAI.cs">
     <Files>
-      <File FileName="Assets/Scrips/CarAI.cs" Line="266" Column="1" />
-      <File FileName="Assets/Scrips/PathFinder.cs" Line="316" Column="30" />
-      <File FileName="Assets/Scrips/Graph.cs" Line="223" Column="18" />
-      <File FileName="Assets/Scrips/Node.cs" Line="23" Column="67" />
-      <File FileName="Assets/Scrips/OldStuff.cs" Line="189" Column="70" />
-      <File FileName="Assets/Scrips/DroneController.cs" Line="19" Column="17" />
-      <File FileName="Assets/Scrips/DroneAI.cs" Line="1" Column="1" />
+      <File FileName="Assets/Scrips/DroneAI.cs" Line="23" Column="33" />
+      <File FileName="Assets/Scrips/CarAI.cs" />
+      <File FileName="Assets/Scrips/PathFinder.cs" Line="349" Column="10" />
+      <File FileName="Assets/Scrips/Graph.cs" />
+      <File FileName="Assets/Scrips/Node.cs" />
+      <File FileName="Assets/Scrips/OldStuff.cs" />
+      <File FileName="Assets/Scrips/DroneController.cs" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="AIMS-Assignment1" expanded="True">
-            <Node name="Assembly-CSharp" expanded="True">
-              <Node name="Assets" expanded="True">
-                <Node name="Scrips" expanded="True">
-                  <Node name="DroneAI.cs" selected="True" />
-                </Node>
-              </Node>
-            </Node>
+            <Node name="Assets" selected="True" />
           </Node>
+        </State>
+      </Pad>
+      <Pad Id="MonoDevelop.UnitTesting.TestPad">
+        <State name="__root__">
+          <Node name="Unity" expanded="True" selected="True" />
         </State>
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="a72317b5-1aab-4110-a32a-ae78331884d0" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>

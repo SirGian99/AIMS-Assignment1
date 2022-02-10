@@ -20,15 +20,18 @@ public class DroneAI : MonoBehaviour
     float v_accel;
     int nodeNumber;
     int stop = 50;
-    Vector3 droneSize = new Vector3(3f, 3f, 3f); //TODO Find drone size
+    Vector3 droneSize = new Vector3(2.5f, 3f, 4f); //TODO Find drone size
     float starting_time;
     int curves = 0;
 
+    Vector3 collision_point;
 
     //driving helpers
     private bool u_curve = false;
     private float u_curve_final_heading = 0;
     bool isCurveVertical = true;
+    bool had_hit_vertical = false;
+    bool had_hit_horizontal = false;
 
     private bool adjusting;
     Vector3? reference_position;
@@ -164,7 +167,7 @@ public class DroneAI : MonoBehaviour
         int upsampling_factor = 4;
         upsampled_path = PathFinder.pathUpsampling(graph.path, upsampling_factor);
         up_and_smooth = PathFinder.pathSmoothing(upsampled_path, 0.6f, 0.2f, 1E-09f);
-        final_path = up_and_smooth;
+        final_path = graph.path;
         for (int i = upsampling_factor; i < final_path.Count - 1; i++)
         {
             int debug_oldc = curves;
@@ -196,6 +199,12 @@ public class DroneAI : MonoBehaviour
         Gizmos.DrawLine(transform.position, targetPosition);
         Gizmos.DrawSphere(transform.position, 1f);
         Gizmos.DrawSphere(targetPosition, 1f);
+        if (collision_point != null)
+        {
+            Gizmos.color = Color.black;
+
+            Gizmos.DrawSphere(collision_point, 1f);
+        }
 
 
         Gizmos.color = Color.yellow;
@@ -274,115 +283,7 @@ public class DroneAI : MonoBehaviour
     }
 
 
-    public void SetAcceleration(int heading_steps, Node target)
-    {
-        float max_speed = 65;
-        int slowdown_factor_h = 1;
-        int slowdown_factor_v = 1;
-
-        
-        Vector3 directionToMove = -(this.targetPosition - transform.position);
-        float x_dot = Vector3.Dot(directionToMove, new Vector3(m_Drone.acceleration.x, 0, 0));
-        float z_dot = Vector3.Dot(directionToMove, new Vector3(0,0,m_Drone.acceleration.z));
-
-        Debug.Log("Curr acc: " + m_Drone.acceleration + " Direction: " + directionToMove + " x_dot:" + x_dot + " z_dot: " + z_dot);
-        directionToMove = directionToMove.normalized;
-        if (x_dot < -0.5)
-        {
-            slowdown_factor_h = -heading_steps-1;
-        }
-
-        if (z_dot < -0.5)
-        {
-            slowdown_factor_v = -heading_steps-1;
-        }
-
-        float dot = Vector3.Dot(transform.forward, directionToMove);
-        float direction = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
-        Vector3 final_acceleration;
-
-      
-
-        h_accel = m_Drone.max_acceleration * directionToMove.x / slowdown_factor_h;
-        v_accel = m_Drone.max_acceleration * directionToMove.z / slowdown_factor_v;
-        //Debug.Log("Curr acc: (" + h_accel + " , " + v_accel + ") Direction to move: " + directionToMove + "Max acc: " + m_Drone.max_acceleration);
-        //Debug.Log("Curr speed: " + m_Drone.velocity.magnitude + " Max speed: " + m_Drone.max_speed);
-
-        return;
-        switch (target.heading)
-        {
-
-            case 0:
-                h_accel = m_Drone.max_acceleration*slowdown_factor_h;
-                v_accel = 0;
-                if (Math.Abs(m_Drone.velocity.z) > 0.3)
-                {
-                    Debug.Log("Decelerate");
-                    v_accel = -m_Drone.acceleration.z;
-                }
-                break;
-            case 90:
-                v_accel = m_Drone.max_acceleration* slowdown_factor_v;
-                h_accel = 0;
-                if (Math.Abs(m_Drone.velocity.x) > 0.3)
-                {
-                    Debug.Log("Decelerate");
-
-                    h_accel = -m_Drone.acceleration.x;
-                }
-                break;
-            case 180:
-                h_accel = - m_Drone.max_acceleration* slowdown_factor_h;
-                v_accel = 0;
-                if (Math.Abs(m_Drone.velocity.z) > 0.3)
-                {
-                    Debug.Log("Decelerate");
-
-                    v_accel = -m_Drone.acceleration.z;
-                }
-                break;
-            case 270:
-                v_accel = -m_Drone.max_acceleration* slowdown_factor_v;
-                h_accel = 0;
-                if (Math.Abs(m_Drone.velocity.x) > 0.3)
-                {
-                    Debug.Log("Decelerate");
-
-                    h_accel = -m_Drone.acceleration.x;
-                }
-                break;
-            case 45:
-                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
-                h_accel = final_acceleration.x - m_Drone.acceleration.x;
-                v_accel = final_acceleration.z - m_Drone.acceleration.z;
-                h_accel*= slowdown_factor_h;
-                v_accel *= slowdown_factor_v;
-                break;
-            case 135:
-                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
-                h_accel = final_acceleration.x - m_Drone.acceleration.x;
-                v_accel = final_acceleration.z - m_Drone.acceleration.z;
-                h_accel *= slowdown_factor_h;
-                v_accel *= slowdown_factor_v;
-                break;
-            case 225:
-                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
-                h_accel = final_acceleration.x - m_Drone.acceleration.x;
-                v_accel = final_acceleration.z - m_Drone.acceleration.z;
-                h_accel *= slowdown_factor_h;
-                v_accel *= slowdown_factor_v;
-                break;
-            case 315:
-                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
-                h_accel = final_acceleration.x - m_Drone.acceleration.x;
-                v_accel = final_acceleration.z - m_Drone.acceleration.z;
-                h_accel *= slowdown_factor_h;
-                v_accel *= slowdown_factor_v;
-                break;
-
-        }
-
-    }
+    
 
     //public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
     //{
@@ -505,7 +406,8 @@ public class DroneAI : MonoBehaviour
 
             if (get_closest_node(transform.position, final_path, nodeNumber) <= nodeNumber + 1 && distanceToTarget > targetDistanceMargin && !in_the_same_cell(transform.position, targetPosition, graph) && stop == 50)
             {
-                SetAcceleration(heading_steps: heading_steps, final_path[Math.Min(nodeNumber+3, final_path.Count-1)]);
+                //SetAcc(final_path[Math.Min(nodeNumber + 1, final_path.Count - 1)]);
+                SetAcceleration(heading_steps: heading_steps, final_path[Math.Max(nodeNumber-1, 0)]);
                 //SetAccelerationSteering(heading_steps: heading_steps);
                 //avoid_obstacles(heading_steps > 0);
                 Debug.Log("Acceleration is set to " + m_Drone.acceleration.magnitude);
@@ -553,7 +455,6 @@ public class DroneAI : MonoBehaviour
         }
         else
         {
-
             m_Drone.Move(0f, 0f);
 
         }
@@ -695,29 +596,107 @@ public class DroneAI : MonoBehaviour
         return true;
     }
 
+    private void avoid_obstacles(bool curve_approaching = false)
+    {
+        RaycastHit hit;
+        Vector3 maxRange = new Vector3(2 * graph.x_unit + 0.1f,0,2*graph.z_unit+0.1f);
+        
+        Vector3 to_check = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 forward = new Vector3(0, 0, 2);
+        Vector3 left = new Vector3(-2, 0 ,0);
+        Vector3 right = new Vector3(2, 0, 0);
+
+        if (!had_hit_vertical && Physics.Raycast(to_check, transform.TransformDirection(Vector3.forward) + forward, out hit, maxRange.z))
+        {
+            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+
+            v_accel = - m_Drone.acceleration.z * 0.5f;
+
+            Debug.Log("Frontal collision, distance: " + hit.distance);
+            collision_point = hit.point;
+
+            had_hit_vertical = true;
+
+            //if (hit.distance < 5) //recovery from frontal hit
+            //{
+            //    Debug.Log("Collision STOP");
+            //    this.accelerationAmount = 0;
+            //    this.footbrake = -1;
+            //    this.steeringAmount *= -1;
+            //    this.handbrake = 0;
+            //}
+        }
+
+        /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+        {
+            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+            this.accelerationAmount = 1;
+            this.footbrake = 0;
+            Debug.Log("Back collision");
+            had_hit = true;
+
+        }*/
+
+        if (Physics.Raycast(to_check, transform.TransformDirection(Vector3.right) + right, out hit, maxRange.x))
+        {
+            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+            
+            Debug.Log("Right collision on position " + hit.point);
+            collision_point = hit.point;
+
+            h_accel = -5;
+            had_hit_horizontal = true;
+
+        }
+
+        if (Physics.Raycast(to_check, transform.TransformDirection(Vector3.left) + left, out hit, maxRange.x))
+        {
+            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+            Debug.DrawRay(transform.position, closestObstacleInFront, Color.red);
+
+            
+            Debug.Log("Left collision on position " + hit.point);
+            collision_point = hit.point;
+
+            h_accel = h_accel == -5 ? 0 : 5;
+
+            had_hit_horizontal = true;
+        }
+
+
+    }
+
+
+
+
+
+
     //private void avoid_obstacles(bool curve_approaching = false)
     //{
     //    RaycastHit hit;
-    //    Vector3 maxRange = carSize * 1.2f;
-    //    bool had_hit = false;
+    //    Vector3 maxRange = droneSize * 1.2f;
 
-    //    if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+    //    if (!had_hit_vertical && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
     //    {
     //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
     //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-    //        this.accelerationAmount *= 0.5f;
-    //        this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
-    //        Debug.Log("Frontal collision, distance: " + hit.distance);
-    //        had_hit = true;
 
-    //        if (hit.distance < 5) //recovery from frontal hit
-    //        {
-    //            Debug.Log("Collision STOP");
-    //            this.accelerationAmount = 0;
-    //            this.footbrake = -1;
-    //            this.steeringAmount *= -1;
-    //            this.handbrake = 0;
-    //        }
+    //        v_accel = -m_Drone.acceleration.z * 0.5f;
+
+    //        Debug.Log("Frontal collision, distance: " + hit.distance);
+    //        had_hit_vertical = true;
+
+    //        //if (hit.distance < 5) //recovery from frontal hit
+    //        //{
+    //        //    Debug.Log("Collision STOP");
+    //        //    this.accelerationAmount = 0;
+    //        //    this.footbrake = -1;
+    //        //    this.steeringAmount *= -1;
+    //        //    this.handbrake = 0;
+    //        //}
     //    }
 
     //    /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
@@ -735,12 +714,19 @@ public class DroneAI : MonoBehaviour
     //    {
     //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
     //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-    //        this.accelerationAmount *= 0.7f;
-    //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-    //        this.steeringAmount += -0.5f;
-    //        Debug.Log("Right collision");
-    //        had_hit = true;
 
+    //        if (m_Drone.velocity.z < 0)
+    //        {
+    //            Debug.Log("Right collision");
+    //            h_accel = -5;
+    //        }
+    //        else
+    //        {
+    //            Debug.Log("Left collision");
+    //            h_accel = 5;
+
+    //        }
+    //        had_hit_horizontal = true;
 
     //    }
 
@@ -748,24 +734,208 @@ public class DroneAI : MonoBehaviour
     //    {
     //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
     //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-    //        this.accelerationAmount *= 0.7f;
-    //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-    //        this.steeringAmount += 0.5f;
+
     //        Debug.Log("Left collision");
 
-    //        had_hit = true;
+    //        if (m_Drone.velocity.z < 0)
+    //        {
+    //            Debug.Log("Left collision");
+    //            h_accel = h_accel == -5 ? 0 : 5;
+    //        }
+    //        else
+    //        {
+    //            Debug.Log("Right collision");
+    //            h_accel = h_accel == 5 ? 0 : -5;
+
+    //        }
+
+
+    //        had_hit_horizontal = true;
     //    }
 
-    //    if (!had_hit && !curve_approaching)
-    //    {
-    //        this.accelerationAmount *= 1.25f;
-    //        Debug.Log("Not hit speed");
-    //    }
+
     //}
 
-    // Update is called once per frame
-    void Update()
+
+
+
+    public void slow_down(bool vertically, bool horizontally)
     {
-        
+        float max_speed = 5;
+
+        if ( horizontally && m_Drone.velocity.x > max_speed)
+        {
+            if (m_Drone.velocity.x * m_Drone.acceleration.x > 0)
+            {
+                h_accel *= -1;
+            } 
+        }
+
+        if (vertically && m_Drone.velocity.z > max_speed)
+        {
+            if (m_Drone.velocity.z * m_Drone.acceleration.z > 0)
+            {
+                v_accel *= -1;
+            }
+        }
+
+    }
+
+
+
+    public void SetAcc( Node target, int heading_steps = 0)
+    {
+        float max_speed = 5;
+
+        Vector3 directionToMove = (new Vector3(target.x_pos, 0, target.z_pos) - new Vector3(transform.position.x, 0, transform.position.z));
+        float x_dot = directionToMove.normalized.x * m_Drone.velocity.normalized.x;
+        float z_dot = directionToMove.normalized.z * m_Drone.velocity.normalized.z;
+        float dot = Vector3.Dot(directionToMove.normalized, m_Drone.velocity.normalized);
+
+        if(dot < 0.75f)
+        {
+            v_accel = 0.2f * m_Drone.max_acceleration * directionToMove.normalized.z;
+            h_accel = 0.2f * m_Drone.max_acceleration * directionToMove.normalized.x;
+        }
+
+
+        slow_down(true, true); //devo rallentare solo se sto andando troppo veloce
+
+    }
+
+    public void SetAcceleration(int heading_steps, Node target)
+    {
+        float max_speed = 5;
+
+        bool slow_h=false;
+        bool slow_v=false;
+
+        int slowdown_factor_h = 1;
+        int slowdown_factor_v = 1;
+
+
+        Vector3 directionToMove = (this.targetPosition - transform.position);
+        float x_dot = Vector3.Dot(directionToMove, new Vector3(m_Drone.velocity.x, 0, 0));
+        float z_dot = Vector3.Dot(directionToMove, new Vector3(0, 0, m_Drone.velocity.z));
+
+        Debug.Log("Curr acc: " + m_Drone.acceleration + " Speed: " + m_Drone.velocity.magnitude + "Direction: " + directionToMove.normalized + " x_dot:" + x_dot + " z_dot: " + z_dot);
+        directionToMove = directionToMove.normalized;
+        if (x_dot < -0.5 && m_Drone.velocity.magnitude > 0.5)
+        {
+            slowdown_factor_h = heading_steps + 1;
+        }
+
+        if (z_dot < -0.5 && m_Drone.velocity.magnitude > 0.5)
+        {
+            slowdown_factor_v = heading_steps + 1;
+        }
+
+        x_dot = Vector3.Dot(directionToMove.normalized, new Vector3(m_Drone.velocity.normalized.x, 0, 0));
+        z_dot = Vector3.Dot(directionToMove.normalized, new Vector3(0, 0, m_Drone.velocity.normalized.z));
+
+        if (x_dot > 0.5 && Math.Abs(m_Drone.velocity.x) > max_speed)
+        {
+            slow_h = true;
+        }
+        else
+        {
+            h_accel = 0.5f * m_Drone.max_acceleration * directionToMove.x / slowdown_factor_h;
+
+        }
+
+        if (z_dot > 0.5 && Math.Abs(m_Drone.velocity.z) > max_speed)
+        {
+            slow_v = true;
+        }
+        else
+        {
+            v_accel = 0.5f * m_Drone.max_acceleration * directionToMove.z / slowdown_factor_v;
+
+        }
+
+        Vector3 final_acceleration;
+
+
+
+        //Debug.Log("Curr acc: (" + h_accel + " , " + v_accel + ") Direction to move: " + directionToMove + "Max acc: " + m_Drone.max_acceleration);
+        //Debug.Log("Curr speed: " + m_Drone.velocity.magnitude + " Max speed: " + m_Drone.max_speed);
+
+        slow_down(slow_v, slow_h);
+        avoid_obstacles();
+
+        return;
+        switch (target.heading)
+        {
+
+            case 0:
+                h_accel = m_Drone.max_acceleration * slowdown_factor_h;
+                v_accel = 0;
+                if (Math.Abs(m_Drone.velocity.z) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+                    v_accel = -m_Drone.acceleration.z;
+                }
+                break;
+            case 90:
+                v_accel = m_Drone.max_acceleration * slowdown_factor_v;
+                h_accel = 0;
+                if (Math.Abs(m_Drone.velocity.x) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+
+                    h_accel = -m_Drone.acceleration.x;
+                }
+                break;
+            case 180:
+                h_accel = -m_Drone.max_acceleration * slowdown_factor_h;
+                v_accel = 0;
+                if (Math.Abs(m_Drone.velocity.z) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+
+                    v_accel = -m_Drone.acceleration.z;
+                }
+                break;
+            case 270:
+                v_accel = -m_Drone.max_acceleration * slowdown_factor_v;
+                h_accel = 0;
+                if (Math.Abs(m_Drone.velocity.x) > 0.3)
+                {
+                    Debug.Log("Decelerate");
+
+                    h_accel = -m_Drone.acceleration.x;
+                }
+                break;
+            case 45:
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 135:
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 225:
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+            case 315:
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                h_accel = final_acceleration.x - m_Drone.acceleration.x;
+                v_accel = final_acceleration.z - m_Drone.acceleration.z;
+                h_accel *= slowdown_factor_h;
+                v_accel *= slowdown_factor_v;
+                break;
+
+        }
+
     }
 }

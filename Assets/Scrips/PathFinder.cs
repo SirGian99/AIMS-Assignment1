@@ -353,5 +353,26 @@ public class PathFinder : MonoBehaviour
     }
 
 
+    public static List<Node> downsample_path(List<Node> path)
+    {
+        List<Node> to_return = new List<Node>();
+        Node old = path[0];
+        to_return.Add(old);
+        for(int i = 1; i<path.Count-1; i++)
+        {
+            if(Math.Abs(old.heading - path[i].heading) <0.01  && Math.Abs(old.heading - path[i + 1].heading)<0.01)
+            {
+                Debug.Log("Skipping node " + i);
+                continue;
+
+            }
+            old = path[i];
+            to_return.Add(old);
+        }
+        to_return.Add(path[path.Count - 1]);
+
+        return to_return;
+    }
+
 
 }
