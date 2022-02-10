@@ -89,6 +89,7 @@
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\MobileControlRig.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Scripts\CarAudio.cs" />
      <Compile Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\Scripts\AxisTouchButton.cs" />
+     <Compile Include="Assets\Scrips\OldStuff.cs" />
      <None Include="Assets\OtherAssets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\CarGuidelines.txt" />
      <None Include="Assets\OtherAssets\Standard Assets\Vehicles\Car\Shaders\ReflectiveDiffuseSpecTransp.shader" />

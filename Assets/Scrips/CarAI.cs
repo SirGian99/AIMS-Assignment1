@@ -38,6 +38,10 @@ namespace UnityStandardAssets.Vehicles.Car
         //driving helpers
         private bool u_curve = false;
         private float u_curve_final_heading = 0;
+        bool isCurveVertical = true;
+
+        private bool adjusting;
+        Vector3? reference_position;
 
 
         List<Node> up_and_smooth;
@@ -130,6 +134,22 @@ namespace UnityStandardAssets.Vehicles.Car
                 */
             }
 
+            if (x_unit > carSize.x * 4)
+            {
+                x_scale *= 2;
+                x_unit /= 2;
+
+            }
+            if (z_unit > carSize.z * 4)
+            {
+                z_scale *= 4;
+                z_unit /= 4;
+                /*
+                z_unit = carSize.z * 1.5f;
+                z_scale = (int)(z_len / z_unit) * 2;
+                */
+            }
+
             Debug.Log("Variables After car rescaling. x_scale: " + x_scale + " z_scale: " + z_scale +  " x_unit: " + x_unit + " z_unit: " + z_unit + " ratio: " + ratio);
 
             /*
@@ -172,6 +192,8 @@ namespace UnityStandardAssets.Vehicles.Car
             {
                 z_scale *= 2;
             }
+
+            
 
             x_unit = x_len / x_scale;
             z_unit = z_len / z_scale;
@@ -439,15 +461,15 @@ namespace UnityStandardAssets.Vehicles.Car
 
             float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
             if (u_curve)
-            {
-                max_speed = 10;
-                if (m_Car.CurrentSpeed > 5)
+            {//61.82
+                max_speed = 50;
+                if (m_Car.CurrentSpeed > max_speed*0.6)
                 {
                     this.handbrake = 1;
                 }
             }
             else
-                max_speed /= (heading_steps + 1);
+                max_speed *= (float)Math.Exp(-heading_steps / 2);
 
 
             if (dot >= 0)
@@ -488,45 +510,34 @@ namespace UnityStandardAssets.Vehicles.Car
 
         private void FixedUpdate()
         {
-            // this is how you access information about the terrain from the map
-            //int i = terrain_manager.myInfo.get_i_index(transform.position.x);
-            //int j = terrain_manager.myInfo.get_j_index(transform.position.z);
-            //float grid_center_x = terrain_manager.myInfo.get_x_pos(i);
-            //float grid_center_z = terrain_manager.myInfo.get_z_pos(j);
-
-            //Debug.DrawLine(transform.position, new Vector3(grid_center_x, 0f, grid_center_z));
+            
             if (nodeNumber == 0)
                 starting_time = Time.time;
             if (stop > 0)
             {
                 setHandbrake();
-                /*int closest_index = get_closest_node(transform.position, final_path)+1;
-                Debug.Log("Actual: " + nodeNumber + " Closest: " + closest_index);
-                if (closest_index > nodeNumber)
-                {
-                    nodeNumber = closest_index;
-                    Debug.Log("ECCOLO");
-                }
-                */
+
+
                 Node n = final_path[nodeNumber];
-                int lookahead = (int)(curves/2.5);
+                Debug.DrawLine(transform.position, final_path[get_closest_node(transform.position, final_path, nodeNumber)].worldPosition);
+
+                int lookahead = (int)(curves / 2.5);
                 int u_curve_lookahead = (int)(lookahead * 1.7);
                 //TODO
                 //we could tune it based on the number of curves in the path and theyr tipe (like, ucurves and so on)
                 //idea: use 2 lookah., one for normal speed and another one to detect u curves.
-                
+
                 Node lookahead_node;
-                int heading_steps=0;
-                int tolerance = 15;
+                int heading_steps = 0;
+                int tolerance;
                 float current_angle = (360 - transform.eulerAngles.y + 90) % 360;
                 Debug.Log("Current angle: " + current_angle);
-                //Debug.Log("Current angle x: " + transform.eulerAngles.x);
-                //Debug.Log("Current angle z: " + transform.eulerAngles.z);
 
                 if (u_curve)
                 {
-                    Debug.Log("Current angle: " + transform.eulerAngles.y + " to_reach: " + u_curve_final_heading);
-                    if (n.heading == u_curve_final_heading || Math.Abs(u_curve_final_heading - current_angle) < tolerance )
+                    tolerance = isCurveVertical ? (int)(Math.Atan(graph.x_unit / graph.z_unit) * Mathf.Rad2Deg) : (int)(Math.Atan(graph.z_unit / graph.x_unit)* Mathf.Rad2Deg);
+                    Debug.Log("Current angle: " + transform.eulerAngles.y + " to_reach: " + u_curve_final_heading + "tolerance: " + tolerance);
+                    if (n.heading == u_curve_final_heading || Math.Abs(u_curve_final_heading - current_angle) < tolerance)
                     {
                         u_curve = false; //finished the u_curve
                         Debug.Log("U curve end detected");
@@ -538,49 +549,48 @@ namespace UnityStandardAssets.Vehicles.Car
                 {
                     lookahead_node = final_path[nodeNumber + 1];
 
-                    heading_steps = n.heading != lookahead_node.heading ? 1 : 0;
-                    int j = 1;
-                    int heading_difference = 0;
-                    for (; j < u_curve_lookahead && nodeNumber+1+j<final_path.Count; j++)
+                    heading_steps = n.heading != lookahead_node.heading  && !adjusting ? 1 : 0;
+                    int heading_difference;
+                    float intermediate_heading = heading_steps==1 ? lookahead_node.heading : -1;
+
+                    for (int j = 1; j < u_curve_lookahead && nodeNumber + 1 + j < final_path.Count; j++)
                     {
                         Debug.Log("Lookhaead node heading: " + lookahead_node.heading + " next_node_heading: " + final_path[nodeNumber + 1 + j].heading);
                         if (lookahead_node.heading != final_path[nodeNumber + 1 + j].heading && j < lookahead)
                         {
+                            if (heading_steps == 0)
+                                intermediate_heading = final_path[nodeNumber + 1 + j].heading;
                             heading_steps++;
                         }
                         lookahead_node = final_path[nodeNumber + 1 + j];
                         heading_difference = (int)(Math.Abs(n.heading - lookahead_node.heading));
                         Debug.Log("J: " + j + " Nodenumber: " + nodeNumber + " Current h: " + n.heading + " Final h: " + final_path[nodeNumber + 1 + j].heading);
-                        if (heading_difference >= 180) // && (vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.x_unit*2 || !vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.z_unit * 2))
+                        if (heading_difference >= 180 && heading_steps == 2) // && (vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.x_unit*2 || !vertical && Vector3.Distance(n.worldPosition, final_path[nodeNumber + 1 + j].worldPosition) > graph.z_unit * 2))
                         { //the addition after the first && is probabily wrong
                             u_curve = true;
                             u_curve_final_heading = final_path[nodeNumber + 1 + j].heading;
-                            Debug.Log("U curve detected!");
+                            isCurveVertical = u_curve_final_heading == 90 || u_curve_final_heading == 270;
+                            Debug.Log("Is curve vertical? " + isCurveVertical);
+
+                            Debug.Log("U curve detected! Heading Steps: " + heading_steps);
                             break;
                         }
                     }
                     //heading_steps += heading_difference / 45;
-
-                    j--;
-                    
-                    //bool vertical = n.heading == 90 || n.heading == 270;
-                    /*
-                    
-                    */
                 }
 
                 Debug.Log("Heading steps: " + heading_steps);
 
-                float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit* graph.x_unit *  + graph.z_unit* graph.z_unit) / 2;
+                float targetDistanceMargin = (float)Math.Sqrt(graph.x_unit * graph.x_unit * +graph.z_unit * graph.z_unit) / 2;
                 targetDistanceMargin = 5f;
                 Vector3 nextPosition = new Vector3(n.x_pos, transform.position.y, n.z_pos);
                 Debug.Log("Next position is " + nextPosition);
                 SetNextTarget(nextPosition);
                 float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
 
-                if (get_closest_node(transform.position, final_path) <= nodeNumber+1  && distanceToTarget > targetDistanceMargin && !in_the_same_cell(transform.position, targetPosition, graph) && stop==50)
+                if (get_closest_node(transform.position, final_path, nodeNumber) <= nodeNumber + 1 && distanceToTarget > targetDistanceMargin && !in_the_same_cell(transform.position, targetPosition, graph) && stop == 50)
                 {
-                    
+
                     SetAccelerationSteering(heading_steps: heading_steps);
                     Debug.Log("Acceleration is set to " + accelerationAmount);
                     Debug.Log("Steering is set to " + steeringAmount);
@@ -598,63 +608,38 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             Debug.Log("REACHED IN " + (Time.time - starting_time) + " seconds");
                             starting_time = -1;
-                }   
+                        }
                     }
                     else // we arrived at a waypoint node, move to the next one
                     {
+                        bool was_adjusting = adjusting;
+                        final_path[nodeNumber + 1].worldPosition = move_next_point(final_path[nodeNumber + 1].heading, final_path[nodeNumber + 1].worldPosition);
+
+
+                        if (adjusting == false && was_adjusting == true && Math.Abs(n.heading - final_path[nodeNumber + 1].heading) < 0.1) //in pratica, non è più necessario. Facciamolo finché ci serve (rettilineo) con l'heading
+                        {
+                            if (reference_position == null)
+                                reference_position = nextPosition;
+                            final_path[nodeNumber + 1].worldPosition = move_next_point(final_path[nodeNumber + 1].heading, final_path[nodeNumber + 1].worldPosition, forcing_position: (Vector3)reference_position);
+                            Debug.Log("ADJUSTING");
+
+                        }
+                        else
+                            reference_position = null;
+                        final_path[nodeNumber + 1].x_pos = final_path[nodeNumber + 1].worldPosition.x;
+                        final_path[nodeNumber + 1].z_pos = final_path[nodeNumber + 1].worldPosition.z;
+
                         nodeNumber += 1;
-                        
+
                     }
                 }
             }
             else
             {
-                
+
                 m_Car.Move(0f, 0f, -1f, 1f);
 
             }
-
-            //if (m_Car.CurrentSpeed < 1 && stop == 50)
-            //{
-            //    nodeNumber = get_closest_node(transform.position, final_path) - 1;
-            //}
-
-
-            /*
-                        // this is how you access information about the terrain from a simulated laser range finder
-                        RaycastHit hit;
-                        float maxRange = 50f;
-                        if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange))
-                        {
-                            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-                            Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                            //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
-                            //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
-                        }
-            */
-
-            // this is how you control the car
-            // public void Move(float steering, float accel, float footbrake, float handbrake)
-            // we can access the dimension of the terrain and of each block
-
-            //m_Car.Move(1f, 1f, 1f, 0f);
-            //Debug.Log("Max steering angle: " + m_Car.m_MaximumSteerAngle);
-
-
-
-
-
-
-            // this is how you access information about the terrain from a simulated laser range finder
-
-
-
-            // this is how you control the car
-            // public void Move(float steering, float accel, float footbrake, float handbrake)
-            // we can access the dimension of the terrain and of each block
-
-            //m_Car.Move(1f, 1f, 1f, 0f);
-            //Debug.Log("Max steering angle: " + m_Car.m_MaximumSteerAngle);
 
 
         }
@@ -664,151 +649,25 @@ namespace UnityStandardAssets.Vehicles.Car
             return (Math.Abs(current_pos.x - target_pos.x) + Math.Abs(current_pos.z - target_pos.z)) <= range;
         }
 
-        public int get_closest_node(Vector3 position, List<Node> path)
+        public int get_closest_node(Vector3 position, List<Node> path, int current_index)
         {
+            Debug.Log("Finding the closest node to " + position);
             int closest = -1;
             float distance = 1000000000;
-            int safe_exit = 5;
             position = new Vector3(position.x, 0, position.z);
-            for (int i = 0; i < path.Count && safe_exit > 0; i++)
+            int range = 10;
+            for (int i = (int)Mathf.Clamp(current_index - range, 0, path.Count); i < Math.Min(path.Count, current_index + 10); i++)
             {
-                float new_distance = Vector3.Distance(position, path[i].worldPosition);
+                Vector3 to_compare = new Vector3(path[i].x_pos, 0, path[i].z_pos);
+                float new_distance = Vector3.Distance(position, to_compare);
                 if (new_distance <= distance)
                 {
                     distance = new_distance;
                     closest = i;
-                }
-                else if (closest!=-1)
-                {
-                    safe_exit--;
+                    Debug.Log("Closest node at index i:" + i + " distance: " + distance + " and position " + path[i].worldPosition);
                 }
             }
             return closest;
-        }
-
-
-        public void GiancarloPID_attempt()
-        {
-            if (up_and_smooth != null && node_index < up_and_smooth.Count)
-            {
-                if (inRange(old_target_pos, new Vector3(rigidbody.position.x, 0, rigidbody.position.z), 1))
-                    stuck_safe_exit--;
-                else
-                    stuck_safe_exit = max_stuck_safe_exit;
-
-                old_target_pos = new Vector3(rigidbody.position.x, 0, rigidbody.position.z);
-
-
-
-                Vector3 target_position = up_and_smooth[node_index].worldPosition;
-
-                float slow_down_rate = 1;
-
-                int backup = get_closest_node(old_target_pos, up_and_smooth);
-                int tolerance = 10;
-                if (node_index - tolerance < backup && backup < node_index + tolerance && stuck_safe_exit != 0)
-                {
-
-                    target_position = up_and_smooth[backup].worldPosition;
-                }
-
-                if (stuck_safe_exit == 0)
-                {
-                    Debug.Log("EIEIEI");
-                    for (int k = 0; k < 100; k++)
-                    {
-
-                        m_Car.Move(0.1f, 1f, 0, 0);
-                    }
-
-                    return;
-
-                    target_position = up_and_smooth[node_index + 2].worldPosition;
-                }
-                target_velocity = (target_position - old_target_pos) / Time.fixedDeltaTime;
-                Debug.Log(node_index + ")Target: " + target_position + " Old:" + old_target_pos + " Vel: " + target_velocity + " Car_pos: " + rigidbody.position);
-                //old_target_pos = target_position;
-
-                // a PD-controller to get desired velocity
-                Vector3 position_error = target_position - transform.position;
-                Vector3 velocity_error = target_velocity / 2 - rigidbody.velocity;
-                Vector3 desired_acceleration = k_p * position_error + k_d * velocity_error;
-
-                float steering = Vector3.Dot(desired_acceleration, transform.right);
-                float acceleration = Vector3.Dot(desired_acceleration, transform.forward) / 2;
-
-                Debug.DrawLine(target_position, target_position + target_velocity, Color.red);
-                Debug.DrawLine(transform.position, transform.position + rigidbody.velocity, Color.blue);
-                Debug.DrawLine(transform.position, transform.position + desired_acceleration, Color.black);
-
-                // this is how you control the car
-                Debug.Log("Steering:" + steering + " Acceleration:" + acceleration);
-                if (Math.Abs(steering) > m_Car.m_MaximumSteerAngle / 2 && stuck_safe_exit != 0)
-                {
-                    print("HUGE: " + steering + " STuck: " + stuck_safe_exit);
-                    slow_down_rate = 1.0001f - steering / m_Car.m_MaximumSteerAngle;
-                }
-
-                RaycastHit hit;
-                float maxRange = 5f;
-                if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange))
-                {
-                    Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-                    Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                    Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
-
-                    if (hit.distance <= 10f)
-                    {
-                        acceleration /= 100;
-                        if (hit.distance < 5f)
-                        {
-                            m_Car.Move(0f, -1f, 0f, 0f);
-                        }
-                    }
-                    //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
-                }
-
-                if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange))
-                {
-                    Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.right) * hit.distance;
-                    Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                    m_Car.Move(0f, 0f, 1f, 0f);
-                    Debug.Log("Hit RIGHT " + hit.collider.gameObject.name + " at " + hit.distance);
-
-                    if (hit.distance <= 10f)
-                    {
-                        steering = -1;
-                    }
-                    //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
-                }
-
-                if (Physics.Raycast(transform.position - transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange))
-                {
-                    Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.left) * hit.distance;
-                    Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                    m_Car.Move(0f, 0f, 1f, 0f);
-                    Debug.Log("Hit LEFT" + hit.collider.gameObject.name + " at " + hit.distance);
-
-                    if (hit.distance <= 10f)
-                    {
-                        if (steering == -1)
-                            steering = 0;
-                        else steering = 1;
-                    }
-                    //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
-                }
-
-                m_Car.Move(steering, acceleration * slow_down_rate, acceleration * slow_down_rate, 0f);
-                if (inRange(rigidbody.position, target_position, 2.5f))
-                {
-                    node_index++;
-                    Debug.Log("Node " + (node_index - 1) + " reached");
-                }
-
-                if (stuck_safe_exit == 0)
-                    stuck_safe_exit = max_stuck_safe_exit;
-            }
-            else { Debug.Log("OH NO"); }
         }
 
 
@@ -817,6 +676,111 @@ namespace UnityStandardAssets.Vehicles.Car
             return graph.getNodeFromPoint(pos1).Equals(graph.getNodeFromPoint(pos2));
             
         }
+
+        public Vector3 move_next_point(float heading, Vector3 next_point, Vector3? forcing_position = null)
+        {
+            RaycastHit hit;
+            adjusting = false;
+            Vector3 to_return = new Vector3(next_point.x, next_point.y, next_point.z);
+            if(forcing_position != null)
+            {
+                next_point = (Vector3) forcing_position;
+            }
+
+
+            if (heading == 90 || heading == 270) //moving vertical
+            {
+                float maxRange = graph.x_unit;
+                if (Physics.Raycast(next_point, Vector3.left, out hit, maxRange))
+                {
+                    to_return.x += graph.x_unit/2;
+                    adjusting = true;
+
+                }
+                if (Physics.Raycast(next_point, Vector3.right, out hit, maxRange))
+                {
+                    to_return.x -= graph.x_unit/2;
+                    adjusting = true;
+                }
+            }
+
+            else if (heading == 0 || heading == 180)//moving horizontal
+            {
+                float maxRange = graph.z_unit;
+                if (Physics.Raycast(next_point, Vector3.up, out hit, maxRange))
+                {
+                    to_return.z += graph.z_unit/2;
+                    adjusting = true;
+
+                }
+                if (Physics.Raycast(next_point, Vector3.down, out hit, maxRange))
+                {
+                    to_return.z -= graph.z_unit/2;
+                    adjusting = true;
+
+                }
+            }
+
+            return to_return;
+        }
+
+        //this must be called when the first turn has already been done in the U curve
+        private bool is_safe_turn(float final_heading, float intermediate_heading, bool isVertical, int current_node_index) //returns true weather, given a heading direction, there is enough space
+        {
+            while(Math.Abs(final_path[current_node_index].heading - final_heading) > 0.1)
+            {
+                Node node = final_path[current_node_index];
+                float heading = node.heading;
+
+
+                if (isVertical)
+                {
+                    if (intermediate_heading == 180)//anti-clockwise turn
+                    {
+
+                    }
+                    else if (intermediate_heading == 0) //clockwise turn
+                    {
+
+                    }
+                    else return false;
+                }
+
+
+                if (heading == 90 || heading == 270) //moving vertical
+                {
+                    float maxRange = graph.x_unit;
+                    if (Physics.Raycast(node.worldPosition, Vector3.left, maxRange))
+                    {
+                        return false;
+
+                    }
+                    if (Physics.Raycast(node.worldPosition, Vector3.right, maxRange))
+                    {
+                        return false;
+                    }
+                }
+
+                else if (heading == 0 || heading == 180)//moving horizontal
+                {
+                    float maxRange = graph.z_unit;
+                    if (Physics.Raycast(node.worldPosition, Vector3.up, maxRange))
+                    {
+                        return false;
+
+                    }
+                    if (Physics.Raycast(node.worldPosition, Vector3.down, maxRange))
+                    {
+                        return false;
+
+                    }
+                }
+
+                current_node_index++;
+            }
+            return true;
+        }
+
     }
 
 }
