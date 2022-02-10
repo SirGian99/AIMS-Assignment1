@@ -385,7 +385,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
             if (u_curve)
-            {//61.82
+            {
                 max_speed = 50;
                 if (m_Car.CurrentSpeed > max_speed*0.6)
                 {
@@ -516,7 +516,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 {
 
                     SetAccelerationSteering(heading_steps: heading_steps);
-                    avoid_obstacles();
+                    avoid_obstacles(heading_steps>0);
                     Debug.Log("Acceleration is set to " + accelerationAmount);
                     Debug.Log("Steering is set to " + steeringAmount);
                     Debug.Log("Speed:" + m_Car.CurrentSpeed);
@@ -706,10 +706,11 @@ namespace UnityStandardAssets.Vehicles.Car
             return true;
         }
 
-        private void avoid_obstacles()
+        private void avoid_obstacles(bool curve_approaching = false)
         {
             RaycastHit hit;
             Vector3 maxRange = carSize*1.2f;
+            bool had_hit = false;
             
             if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
             {
@@ -717,18 +718,29 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
                 this.accelerationAmount *= 0.5f;
                 this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
-                Debug.Log("Frontal collision");
+                Debug.Log("Frontal collision, distance: " + hit.distance);
+                had_hit = true;
+                 
+                if(hit.distance < 5) //recovery from frontal hit
+                {
+                    Debug.Log("Collision STOP");
+                    this.accelerationAmount = 0;
+                    this.footbrake = -1;
+                    this.steeringAmount *= -1;
+                    this.handbrake = 0;
+                }
             }
 
-            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+            /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
             {
                 Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
                 this.accelerationAmount = 1;
                 this.footbrake = 0;
                 Debug.Log("Back collision");
+                had_hit = true;
 
-            }
+            }*/
 
             if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
             {
@@ -738,6 +750,8 @@ namespace UnityStandardAssets.Vehicles.Car
                 this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
                 this.steeringAmount += -0.5f;
                 Debug.Log("Right collision");
+                had_hit = true;
+                
 
             }
 
@@ -749,7 +763,14 @@ namespace UnityStandardAssets.Vehicles.Car
                 this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
                 this.steeringAmount += 0.5f;
                 Debug.Log("Left collision");
+                
+                had_hit = true;
+            }
 
+            if (!had_hit && !curve_approaching)
+            {
+                this.accelerationAmount *= 1.25f;
+                Debug.Log("Not hit speed");
             }
         }
 
