@@ -164,10 +164,12 @@ public class DroneAI : MonoBehaviour
 
         // Plot your path to see if it makes sense
         PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+        final_path = PathFinder.downsample_path(graph.path);
+
         int upsampling_factor = 4;
         upsampled_path = PathFinder.pathUpsampling(graph.path, upsampling_factor);
         up_and_smooth = PathFinder.pathSmoothing(upsampled_path, 0.6f, 0.2f, 1E-09f);
-        final_path = graph.path;
+
         for (int i = upsampling_factor; i < final_path.Count - 1; i++)
         {
             int debug_oldc = curves;
@@ -195,10 +197,10 @@ public class DroneAI : MonoBehaviour
     {
         Gizmos.color = Color.red;
 
-
+        Vector3 nextNode = new Vector3(final_path[nodeNumber + 1].x_pos, transform.position.y, final_path[nodeNumber + 1].z_pos);
         Gizmos.DrawLine(transform.position, targetPosition);
-        Gizmos.DrawSphere(transform.position, 1f);
-        Gizmos.DrawSphere(targetPosition, 1f);
+        //Gizmos.DrawSphere(transform.position, 1f);
+        Gizmos.DrawSphere(nextNode, 1f);
         if (collision_point != null)
         {
             Gizmos.color = Color.black;
@@ -208,7 +210,7 @@ public class DroneAI : MonoBehaviour
 
 
         Gizmos.color = Color.yellow;
-        Vector3 nextNode = new Vector3(final_path[nodeNumber + 1].x_pos, transform.position.y, final_path[nodeNumber + 1].z_pos);
+       
         Gizmos.DrawLine(transform.position, nextNode);
 
     }
@@ -234,10 +236,10 @@ public class DroneAI : MonoBehaviour
 
         if (final_path != null)
         {
-            for (int i = 0; i < final_path.Count - 1; i++)
+            for (int i = 0; i < final_path.Count; i++)
             {
                 Gizmos.color = Color.black;
-                Gizmos.DrawLine(final_path[i].worldPosition, final_path[i + 1].worldPosition);
+                Gizmos.DrawSphere(final_path[i].worldPosition, 1f);
             }
 
             /*

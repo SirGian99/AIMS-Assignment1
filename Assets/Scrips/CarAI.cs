@@ -243,16 +243,16 @@ namespace UnityStandardAssets.Vehicles.Car
                 old_wp = wp;
             }
             PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
-            final_path = PathFinder.downsample_path(graph.path);
 
             //bez_path = PathFinder.bezierPath(graph.path, 2);
             int upsampling_factor = 4;
             upsampled_path = PathFinder.pathUpsampling(graph.path, upsampling_factor);
             up_and_smooth = PathFinder.pathSmoothing(upsampled_path, 0.6f, 0.2f, 1E-09f);
             //graph.path = PathFinder.pathSmoothing(graph.path);
+            final_path = up_and_smooth;
 
 
-            for(int i = upsampling_factor; i<final_path.Count-1; i++)
+            for (int i = upsampling_factor; i<final_path.Count-1; i++)
             {
                 int debug_oldc = curves;
                 curves += (int)(Math.Abs(final_path[i].heading - final_path[i + 1].heading) / 45);

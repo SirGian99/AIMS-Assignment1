@@ -360,7 +360,11 @@ public class PathFinder : MonoBehaviour
         to_return.Add(old);
         for(int i = 1; i<path.Count-1; i++)
         {
-            if(Math.Abs(old.heading - path[i].heading) <0.01  && Math.Abs(old.heading - path[i + 1].heading)<0.01)
+            Debug.Log("Old: " + old.heading + " Current " + path[i].heading + " Next " + path[i + 1].heading);
+            if(Math.Abs(old.heading - path[i].heading) <0.01  && Math.Abs(old.heading - path[i + 1].heading)<0.01 ||
+                Math.Abs(old.x_pos - path[i].x_pos) < 0.01 && Math.Abs(old.x_pos - path[i + 1].x_pos) < 0.01 ||
+                Math.Abs(old.z_pos - path[i].z_pos) < 0.01 && Math.Abs(old.z_pos - path[i + 1].z_pos) < 0.01
+                )
             {
                 Debug.Log("Skipping node " + i);
                 continue;
