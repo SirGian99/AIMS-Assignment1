@@ -328,10 +328,90 @@ public class DroneAI : MonoBehaviour
 
     //}
 
+    private void MoveDrone()
+    {
+        Node n = final_path[nodeNumber];
 
+        float arrivalRange = 2f;
+        float slowDownRange = 5f;
+
+        //detect when we are in range of the next node (n)
+
+        Vector3 currentPosition = new Vector3(transform.position.x, 0, transform.position.z);
+        if (nodeNumber == final_path.Count - 1)
+        {
+            m_Drone.Move(0, 0);
+            return;
+        }
+
+        if (inRange(currentPosition, n.worldPosition, slowDownRange))
+        {
+            slow_down(true, true);
+            // slow down
+            if (inRange(currentPosition, n.worldPosition, arrivalRange))
+            {
+                nodeNumber++;
+
+                float nextNodeHeading = final_path[nodeNumber].heading;
+                Vector3 final_acceleration;
+                switch (nextNodeHeading)
+                {
+                    case 0:
+                        h_accel = m_Drone.max_acceleration;
+                        v_accel = 0;
+                        break;
+                    case 90:
+                        v_accel = m_Drone.max_acceleration;
+                        h_accel = 0;
+                        break;
+                    case 180:
+                        h_accel = -m_Drone.max_acceleration;
+                        v_accel = 0;
+                        break;
+                    case 270:
+                        v_accel = -m_Drone.max_acceleration;
+                        h_accel = 0;
+                        break;
+                    case 45:
+                        final_acceleration = new Vector3(m_Drone.max_acceleration / (float)Math.Sqrt(2) , 0, m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 135:
+                        final_acceleration = new Vector3(-m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 225:
+                        final_acceleration = new Vector3(-m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, -m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 315:
+                        final_acceleration = new Vector3(m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, -m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                }
+                m_Drone.Move(h_accel, v_accel);
+            }
+        }
+        else
+        {
+            if (m_Drone.velocity.magnitude > 10)
+            {
+                m_Drone.Move(0, 0);
+            }
+            // we are not in range of slowing down
+        }
+        
+    }
 
     private void FixedUpdate()
     {
+        MoveDrone();
+        
+        /*
         if (nodeNumber == 0)
             starting_time = Time.time;
         if (stop > 0)
@@ -460,6 +540,7 @@ public class DroneAI : MonoBehaviour
             m_Drone.Move(0f, 0f);
 
         }
+        */
 
     }
 
@@ -765,7 +846,7 @@ public class DroneAI : MonoBehaviour
     {
         float max_speed = 5;
 
-        if ( horizontally && m_Drone.velocity.x > max_speed)
+        if  (horizontally && Mathf.Abs(m_Drone.velocity.x) > max_speed)
         {
             if (m_Drone.velocity.x * m_Drone.acceleration.x > 0)
             {
@@ -773,13 +854,14 @@ public class DroneAI : MonoBehaviour
             } 
         }
 
-        if (vertically && m_Drone.velocity.z > max_speed)
+        if (vertically && Mathf.Abs(m_Drone.velocity.z) > max_speed)
         {
             if (m_Drone.velocity.z * m_Drone.acceleration.z > 0)
             {
                 v_accel *= -1;
             }
         }
+        m_Drone.Move(h_accel, v_accel);
 
     }
 

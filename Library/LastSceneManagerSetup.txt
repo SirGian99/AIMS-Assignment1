@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/Scenes/main (car).unity
+- path: Assets/Scenes/main (drone).unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
