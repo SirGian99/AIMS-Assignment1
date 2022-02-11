@@ -520,19 +520,22 @@ public class DroneAI : MonoBehaviour
             distance = Vector3.Distance(n.worldPosition, final_path[nodeNumber - 1].worldPosition);
 
         float slowDownRange = Math.Max(5/(float)Math.Log(distance+2), 4);
-        if(distance<graph.z_unit + 0.1 || distance< graph.x_unit + 0.1 || distance < (float)Math.Sqrt(graph.z_unit * graph.z_unit + graph.x_unit * graph.x_unit)+0.2f)
+        if(distance<graph.z_unit + 0.1 || distance< graph.x_unit + 0.1)
         {
-            slowDownRange = (float)Math.Sqrt(graph.z_unit * graph.z_unit + graph.x_unit* graph.x_unit)* 10f;
+            slowDownRange = Math.Min(graph.z_unit, graph.x_unit) / 2.5f;
         }
         Debug.Log("Slow down range: " + slowDownRange);
 
         //detect when we are in range of the next node (n)
 
         Vector3 currentPosition = new Vector3(transform.position.x, 0, transform.position.z);
-        
-        if (inRange(currentPosition, n.worldPosition, slowDownRange) || nodeNumber==0)
+        if (is_slowing)
+            slowDownRange *= 1.1f;
+
+            if (inRange(currentPosition, n.worldPosition, slowDownRange) || nodeNumber==0)
         {
             slow_down(true, true);
+            is_slowing = true;
             // slow down
             if (m_Drone.velocity.magnitude<0.4f|| nodeNumber == 0)
             {

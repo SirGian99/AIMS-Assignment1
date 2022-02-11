@@ -154,7 +154,7 @@ public class PathFinder : MonoBehaviour
                     if (neighbour.wallClosenessCost > 0)
                     {
 
-                        additional_cost += 100;
+                        additional_cost += 1000;
                     }
                 }
                 if (current.parent != null && current.parent.parent != null && Math.Abs(current.parent.parent.heading - neigh_heading) >=90)
