@@ -353,7 +353,7 @@ public class PathFinder : MonoBehaviour
     }
 
 
-    public static List<Node> downsample_path(List<Node> path)
+    public static List<Node> downsample_path2(List<Node> path)
     {
         List<Node> to_return = new List<Node>();
         Node old = path[0];
@@ -378,5 +378,22 @@ public class PathFinder : MonoBehaviour
         return to_return;
     }
 
+    public static List<Node> downsample_path(List<Node> path)
+    {
+        List<Node> to_return = new List<Node>();
 
+
+        List<Node> path_ok = downsample_path2(path);
+
+        Node old = path_ok[0];
+        to_return.Add(old);
+        for (int i = 1; i < path_ok.Count - 1; i++)
+        {
+            if (Math.Abs(path_ok[i].heading - path_ok[i + 1].heading) > 0.1)
+                to_return.Add(path_ok[i]);
+
+        }
+
+        return to_return;
+    }
 }

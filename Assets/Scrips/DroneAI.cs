@@ -50,10 +50,12 @@ public class DroneAI : MonoBehaviour
     int node_index = 1;
     int max_stuck_safe_exit = 10000;
     int stuck_safe_exit = 10000;
+    float max_accel;
 
     private void Start()
     {
         // get the drone controller
+
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
 
@@ -62,6 +64,8 @@ public class DroneAI : MonoBehaviour
         Vector3 start_pos = terrain_manager.myInfo.start_pos;
         Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
         nodeNumber = 0;
+        max_accel = m_Drone.max_acceleration / 2;
+
 
         //List<Vector3> my_path = new List<Vector3>();
 
@@ -285,7 +289,7 @@ public class DroneAI : MonoBehaviour
     }
 
 
-    
+
 
     //public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
     //{
@@ -328,12 +332,18 @@ public class DroneAI : MonoBehaviour
 
     //}
 
-    private void MoveDrone()
+
+    //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
+    //start heading to the next node.
+
+
+
+    private void MoveDrone2()
     {
         Node n = final_path[nodeNumber];
 
-        float arrivalRange = 2f;
-        float slowDownRange = 5f;
+        float arrivalRange = 1.5f;
+        float slowDownRange = 8;
 
         //detect when we are in range of the next node (n)
 
@@ -348,7 +358,7 @@ public class DroneAI : MonoBehaviour
         {
             slow_down(true, true);
             // slow down
-            if (inRange(currentPosition, n.worldPosition, arrivalRange))
+            if (inRange(currentPosition, n.worldPosition, arrivalRange) || nodeNumber == 0)
             {
                 nodeNumber++;
 
@@ -357,42 +367,132 @@ public class DroneAI : MonoBehaviour
                 switch (nextNodeHeading)
                 {
                     case 0:
-                        h_accel = m_Drone.max_acceleration;
+                        h_accel = max_accel;
                         v_accel = 0;
                         break;
                     case 90:
-                        v_accel = m_Drone.max_acceleration;
+                        v_accel = max_accel;
                         h_accel = 0;
                         break;
                     case 180:
-                        h_accel = -m_Drone.max_acceleration;
+                        h_accel = -max_accel;
                         v_accel = 0;
                         break;
                     case 270:
-                        v_accel = -m_Drone.max_acceleration;
+                        v_accel = -max_accel;
                         h_accel = 0;
                         break;
                     case 45:
-                        final_acceleration = new Vector3(m_Drone.max_acceleration / (float)Math.Sqrt(2) , 0, m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2), 0, max_accel / (float)Math.Sqrt(2));
                         h_accel = final_acceleration.x;
                         v_accel = final_acceleration.z;
                         break;
                     case 135:
-                        final_acceleration = new Vector3(-m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, max_accel / (float)Math.Sqrt(2));
                         h_accel = final_acceleration.x;
                         v_accel = final_acceleration.z;
                         break;
                     case 225:
-                        final_acceleration = new Vector3(-m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, -m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
                         h_accel = final_acceleration.x;
                         v_accel = final_acceleration.z;
                         break;
                     case 315:
-                        final_acceleration = new Vector3(m_Drone.max_acceleration / (float)Math.Sqrt(2), 0, -m_Drone.max_acceleration / (float)Math.Sqrt(2));
+                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
                         h_accel = final_acceleration.x;
                         v_accel = final_acceleration.z;
                         break;
                 }
+                m_Drone.Move(h_accel, v_accel);
+            }
+        }
+        else
+        {
+            if (m_Drone.velocity.magnitude > 10)
+            {
+                m_Drone.Move(0, 0);
+            }
+            // we are not in range of slowing down
+        }
+
+    }
+
+
+    //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
+    //start heading to the next node.
+
+    private void MoveDrone()
+    {
+        Node n = final_path[nodeNumber];
+
+        float arrivalRange = 1.5f;
+        float slowDownRange = 5;
+
+        //detect when we are in range of the next node (n)
+
+        Vector3 currentPosition = new Vector3(transform.position.x, 0, transform.position.z);
+        if (nodeNumber == final_path.Count - 1)
+        {
+            m_Drone.Move(0, 0);
+            return;
+        }
+
+        if (inRange(currentPosition, n.worldPosition, slowDownRange))
+        {
+            slow_down(true, true);
+            // slow down
+            if (m_Drone.velocity.magnitude<0.5f|| nodeNumber == 0)
+            {
+                nodeNumber++;
+                Node target_node = final_path[nodeNumber];
+                float nextNodeHeading = final_path[nodeNumber].heading;
+                Vector3 final_acceleration;
+                Vector3 directionToMove = (new Vector3(target_node.x_pos, 0, target_node.z_pos) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
+
+                h_accel = max_accel * directionToMove.x;
+                v_accel = max_accel * directionToMove.z; 
+
+                /*
+                switch (nextNodeHeading)
+                {
+                    case 0:
+                        h_accel = max_accel;
+                        v_accel = 0;
+                        break;
+                    case 90:
+                        v_accel = max_accel;
+                        h_accel = 0;
+                        break;
+                    case 180:
+                        h_accel = -max_accel;
+                        v_accel = 0;
+                        break;
+                    case 270:
+                        v_accel = -max_accel;
+                        h_accel = 0;
+                        break;
+                    case 45:
+                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2) , 0, max_accel / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 135:
+                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, max_accel / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 225:
+                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                    case 315:
+                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
+                        h_accel = final_acceleration.x;
+                        v_accel = final_acceleration.z;
+                        break;
+                }
+                */
                 m_Drone.Move(h_accel, v_accel);
             }
         }
@@ -844,7 +944,7 @@ public class DroneAI : MonoBehaviour
 
     public void slow_down(bool vertically, bool horizontally)
     {
-        float max_speed = 5;
+        float max_speed = 1;
 
         if  (horizontally && Mathf.Abs(m_Drone.velocity.x) > max_speed)
         {
@@ -878,8 +978,8 @@ public class DroneAI : MonoBehaviour
 
         if(dot < 0.75f)
         {
-            v_accel = 0.2f * m_Drone.max_acceleration * directionToMove.normalized.z;
-            h_accel = 0.2f * m_Drone.max_acceleration * directionToMove.normalized.x;
+            v_accel = 0.2f * max_accel * directionToMove.normalized.z;
+            h_accel = 0.2f * max_accel * directionToMove.normalized.x;
         }
 
 
@@ -923,7 +1023,7 @@ public class DroneAI : MonoBehaviour
         }
         else
         {
-            h_accel = 0.5f * m_Drone.max_acceleration * directionToMove.x / slowdown_factor_h;
+            h_accel = 0.5f * max_accel * directionToMove.x / slowdown_factor_h;
 
         }
 
@@ -933,7 +1033,7 @@ public class DroneAI : MonoBehaviour
         }
         else
         {
-            v_accel = 0.5f * m_Drone.max_acceleration * directionToMove.z / slowdown_factor_v;
+            v_accel = 0.5f * max_accel * directionToMove.z / slowdown_factor_v;
 
         }
 
@@ -941,7 +1041,7 @@ public class DroneAI : MonoBehaviour
 
 
 
-        //Debug.Log("Curr acc: (" + h_accel + " , " + v_accel + ") Direction to move: " + directionToMove + "Max acc: " + m_Drone.max_acceleration);
+        //Debug.Log("Curr acc: (" + h_accel + " , " + v_accel + ") Direction to move: " + directionToMove + "Max acc: " + max_accel);
         //Debug.Log("Curr speed: " + m_Drone.velocity.magnitude + " Max speed: " + m_Drone.max_speed);
 
         slow_down(slow_v, slow_h);
@@ -952,7 +1052,7 @@ public class DroneAI : MonoBehaviour
         {
 
             case 0:
-                h_accel = m_Drone.max_acceleration * slowdown_factor_h;
+                h_accel = max_accel * slowdown_factor_h;
                 v_accel = 0;
                 if (Math.Abs(m_Drone.velocity.z) > 0.3)
                 {
@@ -961,7 +1061,7 @@ public class DroneAI : MonoBehaviour
                 }
                 break;
             case 90:
-                v_accel = m_Drone.max_acceleration * slowdown_factor_v;
+                v_accel = max_accel * slowdown_factor_v;
                 h_accel = 0;
                 if (Math.Abs(m_Drone.velocity.x) > 0.3)
                 {
@@ -971,7 +1071,7 @@ public class DroneAI : MonoBehaviour
                 }
                 break;
             case 180:
-                h_accel = -m_Drone.max_acceleration * slowdown_factor_h;
+                h_accel = -max_accel * slowdown_factor_h;
                 v_accel = 0;
                 if (Math.Abs(m_Drone.velocity.z) > 0.3)
                 {
@@ -981,7 +1081,7 @@ public class DroneAI : MonoBehaviour
                 }
                 break;
             case 270:
-                v_accel = -m_Drone.max_acceleration * slowdown_factor_v;
+                v_accel = -max_accel * slowdown_factor_v;
                 h_accel = 0;
                 if (Math.Abs(m_Drone.velocity.x) > 0.3)
                 {
@@ -991,28 +1091,28 @@ public class DroneAI : MonoBehaviour
                 }
                 break;
             case 45:
-                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * max_accel, 0, (float)Math.Sqrt(2) * max_accel);
                 h_accel = final_acceleration.x - m_Drone.acceleration.x;
                 v_accel = final_acceleration.z - m_Drone.acceleration.z;
                 h_accel *= slowdown_factor_h;
                 v_accel *= slowdown_factor_v;
                 break;
             case 135:
-                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, (float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * max_accel, 0, (float)Math.Sqrt(2) * max_accel);
                 h_accel = final_acceleration.x - m_Drone.acceleration.x;
                 v_accel = final_acceleration.z - m_Drone.acceleration.z;
                 h_accel *= slowdown_factor_h;
                 v_accel *= slowdown_factor_v;
                 break;
             case 225:
-                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                final_acceleration = new Vector3(-(float)Math.Sqrt(2) * max_accel, 0, -(float)Math.Sqrt(2) * max_accel);
                 h_accel = final_acceleration.x - m_Drone.acceleration.x;
                 v_accel = final_acceleration.z - m_Drone.acceleration.z;
                 h_accel *= slowdown_factor_h;
                 v_accel *= slowdown_factor_v;
                 break;
             case 315:
-                final_acceleration = new Vector3((float)Math.Sqrt(2) * m_Drone.max_acceleration, 0, -(float)Math.Sqrt(2) * m_Drone.max_acceleration);
+                final_acceleration = new Vector3((float)Math.Sqrt(2) * max_accel, 0, -(float)Math.Sqrt(2) * max_accel);
                 h_accel = final_acceleration.x - m_Drone.acceleration.x;
                 v_accel = final_acceleration.z - m_Drone.acceleration.z;
                 h_accel *= slowdown_factor_h;
