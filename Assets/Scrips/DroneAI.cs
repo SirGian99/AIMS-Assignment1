@@ -256,15 +256,15 @@ public class DroneAI : MonoBehaviour
                 Gizmos.DrawLine(augmented_path[i].worldPosition, augmented_path[i + 1].worldPosition);
                 //Gizmos.DrawLine(augmented_path[i].worldPosition, augmented_path[i + 1].worldPosition);
             }
-
-            /*for (int i = 0; i < graph.path.Count; i++)
+            */
+            for (int i = 0; i < graph.path.Count; i++)
             {
                 Gizmos.color = Color.red;
                 //Gizmos.DrawSphere(graph.path[i].worldPosition, 0.5f);
                 Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
                 //Gizmos.DrawLine(augmented_path[i].worldPosition, augmented_path[i + 1].worldPosition);
             }
-            */
+            
 
             /*
             if(bez_path!=null)
@@ -281,64 +281,261 @@ public class DroneAI : MonoBehaviour
 
 
     }
+    public void getMovingAgain()
+    {
+        Node target_node = final_path[nodeNumber];
+        float nextNodeHeading = final_path[nodeNumber].heading;
+        Vector3 final_acceleration;
+        Vector3 directionToMove = (new Vector3(target_node.x_pos, 0, target_node.z_pos) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
 
+        h_accel = max_accel * directionToMove.x;
+        v_accel = max_accel * directionToMove.z;
+        m_Drone.Move(h_accel, v_accel);
+    }
 
     public void SetNextTarget(Vector3 targetPosition)
     {
         this.targetPosition = targetPosition;
     }
 
+    private void MoveRelativeToWall(Node n, Graph graph)
+    {
+        RaycastHit hit_1;
+        RaycastHit hit_2;
+        float maxRange = 2f;
+        Vector3 newPosition;
+        bool left_wall = false;
+        bool right_wall = false;
+        int maintainMove = 6; // number of nodes to move in advance
+        float nudge = max_accel / 10;
+        switch (n.heading)
+        {
+            case 90:
+                left_wall = Physics.Raycast(n.worldPosition, Vector3.left, out hit_1, maxRange);
+                right_wall = Physics.Raycast(n.worldPosition, Vector3.right, out hit_2, maxRange);
+                newPosition = n.worldPosition;
+                if (left_wall && right_wall)
+                {
+                    if (Math.Abs(hit_1.distance - hit_2.distance) < 0.2f)
+                    {
+
+                    }
+                    else if (hit_1.distance < hit_2.distance)
+                    {
+                        m_Drone.Move(max_accel, 0);
+                        m_Drone.Move(0, 0);
+                        getMovingAgain();
+                        //newPosition = new Vector3(n.x_pos + graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                        //newPosition = new Vector3(n.x_pos + (hit_1.distance + hit_2.distance) / 4, n.worldPosition.y, n.z_pos);
+                        //for (int i = 1; i < maintainMove + 1; i++)
+                        //{
+                        //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                        //    {
+                        //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos + (hit_1.distance + hit_2.distance) / 4, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                        //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                        //    }
+                        //}
+                    }
+                    else if (hit_1.distance > hit_2.distance)
+                    {
+                        m_Drone.Move(-max_accel,0);
+                        m_Drone.Move(0, 0);
+                        getMovingAgain();
+
+                        //newPosition = new Vector3(n.x_pos - graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                        //for (int i = 1; i < maintainMove + 1; i++)
+                        //{
+                        //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                        //    {
+                        //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos - graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                        //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                        //    }
+                        //}
+                    }
+                    //n.worldPosition = newPosition;
+
+                    break;
+                    //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
+                    //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
+                }
+                else if (left_wall)
+                {
+                    m_Drone.Move(max_accel, 0);
+                    m_Drone.Move(0, 0);
+                    getMovingAgain();
+
+                    //newPosition = new Vector3(n.x_pos + graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                    //n.worldPosition = newPosition;
+                    //for (int i = 1; i < maintainMove + 1; i++)
+                    //{
+                    //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                    //    {
+                    //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos + graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                    //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                    //    }
+                    //}
+                    break;
+                }
+                else if (right_wall)
+                {
+                    m_Drone.Move(-max_accel, 0);
+                    m_Drone.Move(0, 0);
+                    getMovingAgain();
+
+                    //newPosition = new Vector3(n.x_pos - graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                    //n.worldPosition = newPosition;
+                    //for (int i = 1; i < maintainMove + 1; i++)
+                    //{
+                    //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                    //    {
+                    //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos - graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                    //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                    //    }
+                    //}
+                    break;
+                }
+                break;
+
+            case 270:
+                left_wall = Physics.Raycast(n.worldPosition, Vector3.left, out hit_1, maxRange);
+                right_wall = Physics.Raycast(n.worldPosition, Vector3.right, out hit_2, maxRange);
+                newPosition = n.worldPosition;
+                if (left_wall && right_wall)
+                {
+                    if (Math.Abs(hit_1.distance - hit_2.distance) < 0.2f)
+                    {
+
+                    }
+                    else if (hit_1.distance < hit_2.distance)
+                    {
+                        m_Drone.Move(max_accel, 0);
+                        m_Drone.Move(0, 0);
+                        getMovingAgain();
+
+                        //newPosition = new Vector3(n.x_pos + graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                        ////newPosition = new Vector3(n.x_pos + (hit_1.distance + hit_2.distance) / 4, n.worldPosition.y, n.z_pos);
+                        //for (int i = 1; i < maintainMove + 1; i++)
+                        //{
+                        //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                        //    {
+                        //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos + (hit_1.distance + hit_2.distance) / 4, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                        //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                        //    }
+                        //}
+
+                    }
+                    else if (hit_1.distance > hit_2.distance)
+                    {
+                        m_Drone.Move(-max_accel, 0);
+                        m_Drone.Move(0, 0);
+                        getMovingAgain();
+
+                        //newPosition = new Vector3(n.x_pos - graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                        //for (int i = 1; i < maintainMove + 1; i++)
+                        //{
+                        //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                        //    {
+                        //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos - graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                        //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                        //    }
+                        //}
+                    }
+                    //n.worldPosition = newPosition;
+                    break;
+                    //Debug.Log("Hit " + hit.collider.gameObject.name + " at " + hit.distance);
+                    //Debug.Log(terrain_manager.myInfo.traversability[2, 2]);
+                }
+                else if (left_wall)
+                {
+                    m_Drone.Move(max_accel, 0);
+                    m_Drone.Move(0, 0);
+                    getMovingAgain();
+
+                    //newPosition = new Vector3(n.x_pos + graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                    //n.worldPosition = newPosition;
+                    //for (int i = 1; i < maintainMove + 1; i++)
+                    //{
+                    //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                    //    {
+                    //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos + graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                    //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                    //    }
+                    //}
+                    break;
+                }
+                else if (right_wall)
+                {
+                    m_Drone.Move(-max_accel, 0);
+                    m_Drone.Move(0, 0);
+                    getMovingAgain();
+
+                    //newPosition = new Vector3(n.x_pos - graph.x_unit / 2, n.worldPosition.y, n.z_pos);
+                    //n.worldPosition = newPosition;
+                    //for (int i = 1; i < maintainMove + 1; i++)
+                    //{
+                    //    if (final_path[nodeNumber + 1 + i].heading == n.heading)
+                    //    {
+                    //        Vector3 followUpNodePosition = new Vector3(final_path[nodeNumber + 1 + i].x_pos - graph.x_unit / 2, n.worldPosition.y, final_path[nodeNumber + 1 + i].z_pos);
+                    //        final_path[nodeNumber + 1 + i].worldPosition = followUpNodePosition;
+                    //    }
+                    //}
+                    break;
+                }
+                break;
+
+        }
+    }
 
 
 
-    //public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
-    //{
-    //    float max_speed = 65;
-    //    Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
+        //public void SetAccelerationSteering(float current_heading = 0, float lookahead_heading = 0, int heading_steps = 0)
+        //{
+        //    float max_speed = 65;
+        //    Vector3 directionToMove = (this.targetPosition - transform.position).normalized;
 
-    //    float dot = Vector3.Dot(transform.forward, directionToMove);
-    //    float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
-    //    this.steeringAmount = steeringAngle / m_Drone.m_MaximumSteerAngle;
-    //    float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
+        //    float dot = Vector3.Dot(transform.forward, directionToMove);
+        //    float steeringAngle = Vector3.SignedAngle(transform.forward, directionToMove, Vector3.up);
+        //    this.steeringAmount = steeringAngle / m_Drone.m_MaximumSteerAngle;
+        //    float safe_steering = Math.Abs(this.steeringAmount) > 0.5 ? 0.7f : 1;
 
-    //    float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
-    //    if (u_curve)
-    //    {
-    //        max_speed = 50;
-    //        if (m_Drone.CurrentSpeed > max_speed * 0.6)
-    //        {
-    //            this.handbrake = 1;
-    //        }
-    //    }
-    //    else
-    //        max_speed *= (float)Math.Exp(-heading_steps / 2);
-
-
-    //    if (dot >= 0)
-    //    {
-
-    //        this.accelerationAmount = (max_speed - m_Drone.CurrentSpeed) / max_speed * safe_steering;
-    //        this.footbrake = 0;
-    //        if (m_Drone.CurrentSpeed >= max_speed)
-    //            this.footbrake = (m_Drone.CurrentSpeed - max_speed) / 10;
-    //    }
-    //    else
-    //    {
-    //        this.accelerationAmount = 0f; // this doesn't work because the acceleration is clamped to 0,1.
-    //        this.footbrake = -1f;
-    //    }
-
-    //    steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
-
-    //}
+        //    float heading_difference = Mathf.Clamp((Math.Abs(current_heading - lookahead_heading) / 45f) * 2, 1, 100);
+        //    if (u_curve)
+        //    {
+        //        max_speed = 50;
+        //        if (m_Drone.CurrentSpeed > max_speed * 0.6)
+        //        {
+        //            this.handbrake = 1;
+        //        }
+        //    }
+        //    else
+        //        max_speed *= (float)Math.Exp(-heading_steps / 2);
 
 
-    //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
-    //start heading to the next node.
+        //    if (dot >= 0)
+        //    {
+
+        //        this.accelerationAmount = (max_speed - m_Drone.CurrentSpeed) / max_speed * safe_steering;
+        //        this.footbrake = 0;
+        //        if (m_Drone.CurrentSpeed >= max_speed)
+        //            this.footbrake = (m_Drone.CurrentSpeed - max_speed) / 10;
+        //    }
+        //    else
+        //    {
+        //        this.accelerationAmount = 0f; // this doesn't work because the acceleration is clamped to 0,1.
+        //        this.footbrake = -1f;
+        //    }
+
+        //    steeringAngle = Mathf.Clamp(steeringAngle, -25, 25);
+
+        //}
 
 
+        //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
+        //start heading to the next node.
 
-    private void MoveDrone2()
+
+    /*
+        private void MoveDrone2()
     {
         Node n = final_path[nodeNumber];
 
@@ -416,7 +613,7 @@ public class DroneAI : MonoBehaviour
         }
 
     }
-
+    */
 
     //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
     //start heading to the next node.
@@ -509,6 +706,8 @@ public class DroneAI : MonoBehaviour
 
     private void FixedUpdate()
     {
+        //MoveRelativeToWall(final_path[nodeNumber], graph);
+
         MoveDrone();
         
         /*
