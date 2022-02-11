@@ -31,6 +31,7 @@ public class DroneAI : MonoBehaviour
     private float u_curve_final_heading = 0;
     bool isCurveVertical = true;
     bool had_hit_vertical = false;
+    bool is_slowing = true;
     bool had_hit_horizontal = false;
 
     private bool adjusting;
@@ -141,7 +142,7 @@ public class DroneAI : MonoBehaviour
 
 
 
-        graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale, z_scale);
+        graph = Graph.CreateGraph(terrain_manager.myInfo, x_scale*2, z_scale*2);
         for (int i = 0; i < terrain_manager.myInfo.traversability.GetLength(0); i++)
         {
             for (int j = 0; j < terrain_manager.myInfo.traversability.GetLength(1); j++)
@@ -167,7 +168,7 @@ public class DroneAI : MonoBehaviour
         graph.printTraversability();
 
         // Plot your path to see if it makes sense
-        PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+        PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360, true); // path is accessible through graph.path
         final_path = PathFinder.downsample_path(graph.path);
 
         int upsampling_factor = 4;
@@ -194,6 +195,13 @@ public class DroneAI : MonoBehaviour
             Debug.Log("Original heading: " + n.heading);
         }
 
+
+        foreach(Node n in final_path)
+        {
+            n.worldPosition = move_next_point(n.heading, n.worldPosition);
+            n.x_pos = n.worldPosition.x;
+            n.z_pos = n.worldPosition.z;
+        }
 
     }
 
@@ -615,15 +623,23 @@ public class DroneAI : MonoBehaviour
     }
     */
 
+
+
     //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
     //start heading to the next node.
 
-    private void MoveDrone()
+    private void MoveDrone3()
     {
+        Debug.Log("Dioporco " + is_slowing);
         Node n = final_path[nodeNumber];
+        float distance = -1;
+        if (nodeNumber > 0)
+            distance = Vector3.Distance(new Vector3(final_path[nodeNumber - 1].x_pos, 0, final_path[nodeNumber - 1].z_pos), new Vector3(final_path[nodeNumber].x_pos, 0, final_path[nodeNumber].z_pos));
 
         float arrivalRange = 1.5f;
-        float slowDownRange = 5;
+        float slowDownRange = distance == -1 ? 4 : distance / 10;
+
+        float max_speed = distance / 7; //i'd like to run each segment in 5 secs
 
         //detect when we are in range of the next node (n)
 
@@ -634,68 +650,106 @@ public class DroneAI : MonoBehaviour
             return;
         }
 
-        if (inRange(currentPosition, n.worldPosition, slowDownRange))
+        if (inRange(currentPosition, n.worldPosition, slowDownRange) || is_slowing)
+        {
+            if (!is_slowing)
+            {
+                Debug.Log("Slow down!");
+                slow_down(true, true);
+            }
+
+        }
+        else
+        {
+            if (m_Drone.velocity.magnitude > max_speed)
+            {
+                m_Drone.Move(0, 0);
+            }
+            // we are not in range of slowing down
+        }
+
+        if (m_Drone.velocity.magnitude < max_speed / 2 && is_slowing)
+        {
+            Debug.Log("DIOPORCO");
+            m_Drone.Move(0, 0);
+            is_slowing = false;
+        }
+        else
+
+            // slow down
+            if (!is_slowing && (m_Drone.velocity.magnitude < 0.3f || nodeNumber == 0))
+        {
+            is_slowing = false;
+            nodeNumber++;
+            Node target_node = final_path[nodeNumber];
+            float nextNodeHeading = final_path[nodeNumber].heading;
+            Vector3 final_acceleration;
+            Vector3 directionToMove = (new Vector3(target_node.x_pos, 0, target_node.z_pos) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
+
+            h_accel = max_accel * directionToMove.x / 2;
+            v_accel = max_accel * directionToMove.z / 2;
+
+            Debug.Log("Dioporco accelerate");
+            m_Drone.Move(h_accel, v_accel);
+        }
+
+
+
+    }
+
+
+    //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
+    //start heading to the next node.
+
+    private void MoveDrone()
+    {
+        if (nodeNumber == final_path.Count)
+        {
+            m_Drone.Move(0, 0);
+            return;
+        }
+
+        Node n = final_path[nodeNumber];
+
+        float arrivalRange = 1.5f;
+        float distance = 6*5;
+        if(nodeNumber>0)
+            distance = Vector3.Distance(n.worldPosition, final_path[nodeNumber - 1].worldPosition);
+
+        float slowDownRange = Math.Max(5/(float)Math.Log(distance+2), 4);
+        if(distance<graph.z_unit + 0.1 || distance< graph.x_unit + 0.1 || distance < (float)Math.Sqrt(graph.z_unit * graph.z_unit + graph.x_unit * graph.x_unit)+0.2f)
+        {
+            slowDownRange = (float)Math.Sqrt(graph.z_unit * graph.z_unit + graph.x_unit* graph.x_unit)* 10f;
+        }
+        Debug.Log("Slow down range: " + slowDownRange);
+
+        //detect when we are in range of the next node (n)
+
+        Vector3 currentPosition = new Vector3(transform.position.x, 0, transform.position.z);
+        
+        if (inRange(currentPosition, n.worldPosition, slowDownRange) || nodeNumber==0)
         {
             slow_down(true, true);
             // slow down
-            if (m_Drone.velocity.magnitude<0.5f|| nodeNumber == 0)
+            if (m_Drone.velocity.magnitude<0.4f|| nodeNumber == 0)
             {
                 nodeNumber++;
                 Node target_node = final_path[nodeNumber];
                 float nextNodeHeading = final_path[nodeNumber].heading;
                 Vector3 final_acceleration;
                 Vector3 directionToMove = (new Vector3(target_node.x_pos, 0, target_node.z_pos) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
-
+                Debug.Log("Dir to mov: " + directionToMove);
                 h_accel = max_accel * directionToMove.x;
-                v_accel = max_accel * directionToMove.z; 
+                v_accel = max_accel * directionToMove.z;
+                
 
-                /*
-                switch (nextNodeHeading)
-                {
-                    case 0:
-                        h_accel = max_accel;
-                        v_accel = 0;
-                        break;
-                    case 90:
-                        v_accel = max_accel;
-                        h_accel = 0;
-                        break;
-                    case 180:
-                        h_accel = -max_accel;
-                        v_accel = 0;
-                        break;
-                    case 270:
-                        v_accel = -max_accel;
-                        h_accel = 0;
-                        break;
-                    case 45:
-                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2) , 0, max_accel / (float)Math.Sqrt(2));
-                        h_accel = final_acceleration.x;
-                        v_accel = final_acceleration.z;
-                        break;
-                    case 135:
-                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, max_accel / (float)Math.Sqrt(2));
-                        h_accel = final_acceleration.x;
-                        v_accel = final_acceleration.z;
-                        break;
-                    case 225:
-                        final_acceleration = new Vector3(-max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
-                        h_accel = final_acceleration.x;
-                        v_accel = final_acceleration.z;
-                        break;
-                    case 315:
-                        final_acceleration = new Vector3(max_accel / (float)Math.Sqrt(2), 0, -max_accel / (float)Math.Sqrt(2));
-                        h_accel = final_acceleration.x;
-                        v_accel = final_acceleration.z;
-                        break;
-                }
-                */
                 m_Drone.Move(h_accel, v_accel);
             }
         }
         else
         {
-            if (m_Drone.velocity.magnitude > 10)
+            
+            if (m_Drone.velocity.magnitude > 100/( 1 + Math.Exp(-0.1 * (distance - 20))))
             {
                 m_Drone.Move(0, 0);
             }
@@ -703,9 +757,19 @@ public class DroneAI : MonoBehaviour
         }
         
     }
+    bool finish = false;
 
     private void FixedUpdate()
     {
+
+        if (nodeNumber == 0)
+            starting_time = Time.time;
+        if (!finish && inRange(new Vector3(transform.position.x, 0 , transform.position.z), final_path[final_path.Count-1].worldPosition, 5))
+        {
+            Debug.Log("Finished in " + (Time.time - starting_time) + "seconds");
+            finish = true;
+        }
+            
         //MoveRelativeToWall(final_path[nodeNumber], graph);
 
         MoveDrone();
@@ -1143,13 +1207,14 @@ public class DroneAI : MonoBehaviour
 
     public void slow_down(bool vertically, bool horizontally)
     {
-        float max_speed = 1;
+        float max_speed = 0.5f;
 
         if  (horizontally && Mathf.Abs(m_Drone.velocity.x) > max_speed)
         {
             if (m_Drone.velocity.x * m_Drone.acceleration.x > 0)
             {
                 h_accel *= -1;
+                is_slowing = true;
             } 
         }
 
@@ -1158,6 +1223,8 @@ public class DroneAI : MonoBehaviour
             if (m_Drone.velocity.z * m_Drone.acceleration.z > 0)
             {
                 v_accel *= -1;
+                is_slowing = true;
+
             }
         }
         m_Drone.Move(h_accel, v_accel);

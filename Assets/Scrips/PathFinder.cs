@@ -7,7 +7,7 @@ public class PathFinder : MonoBehaviour
 {
     public static float[,] headings = new float[,] { { 135f, 90f, 45f }, { 180f, 0f, 0f }, { 225f, 270f, 315f } };
 
-    public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading)
+    public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading, bool drone = false)
     {
         Node start_node = graph.getNodeFromPoint(start_position);
         start_node.heading = start_heading;
@@ -140,6 +140,23 @@ public class PathFinder : MonoBehaviour
                 float costToNeighb = current.gCost + getDistance(graph, current, neighbour);
                 float neigh_heading = headings[-neighbour.j + current.j + 1, neighbour.i - current.i + 1];
                 float additional_cost = Math.Abs(current.heading - neigh_heading) / 22.5f;
+
+                if (drone)
+                {
+                    if ((int)neigh_heading / 45 % 2 == 1)
+                    {
+                        costToNeighb += 100;
+                    }
+                    if(current.heading != neigh_heading)
+                    {
+                        costToNeighb *= 2;
+                    }
+                    if (neighbour.wallClosenessCost > 0)
+                    {
+
+                        additional_cost += 100;
+                    }
+                }
                 if (current.parent != null && current.parent.parent != null && Math.Abs(current.parent.parent.heading - neigh_heading) >=90)
                 {
                     additional_cost *= 1.5f;
@@ -393,6 +410,7 @@ public class PathFinder : MonoBehaviour
                 to_return.Add(path_ok[i]);
 
         }
+        to_return.Add(path[path.Count - 1]);
 
         return to_return;
     }
