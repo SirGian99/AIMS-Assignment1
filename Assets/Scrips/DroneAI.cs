@@ -623,9 +623,9 @@ public class DroneAI : MonoBehaviour
     }
     */
 
-
-
     //Go to the next node based on the direction. Then, as soon as you are in range, you start slowing down. When you stop (regardless of where you are)
+
+
     //start heading to the next node.
 
     private void MoveDrone3()
@@ -762,6 +762,7 @@ public class DroneAI : MonoBehaviour
     private void FixedUpdate()
     {
 
+
         if (nodeNumber == 0)
             starting_time = Time.time;
         if (!finish && inRange(new Vector3(transform.position.x, 0 , transform.position.z), final_path[final_path.Count-1].worldPosition, 5))
@@ -769,9 +770,8 @@ public class DroneAI : MonoBehaviour
             Debug.Log("Finished in " + (Time.time - starting_time) + "seconds");
             finish = true;
         }
-            
         //MoveRelativeToWall(final_path[nodeNumber], graph);
-
+        
         MoveDrone();
         
         /*
