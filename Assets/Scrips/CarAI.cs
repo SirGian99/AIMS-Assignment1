@@ -781,6 +781,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 had_hit_backward = true;
                 this.accelerationAmount = 1;
                 this.footbrake = 0;
+                this.handbrake = 0;
                 this.steeringAmount *= 1;
                 if (m_Car.CurrentSpeed > 10f)
                     had_hit_backward = false;

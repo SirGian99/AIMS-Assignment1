@@ -145,13 +145,17 @@ public class PathFinder : MonoBehaviour
                 {
                     if ((int)neigh_heading / 45 % 2 == 1)
                     {
-                        costToNeighb += 1000000;
+                        costToNeighb += 100;
                     }
                     if(current.heading != neigh_heading)
                     {
                         costToNeighb *= 2;
                     }
-                    additional_cost *= neighbour.wallClosenessCost * 10;
+                    if (neighbour.wallClosenessCost > 0)
+                    {
+
+                        additional_cost += 100;
+                    }
                 }
                 if (current.parent != null && current.parent.parent != null && Math.Abs(current.parent.parent.heading - neigh_heading) >=90)
                 {
