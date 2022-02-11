@@ -39,6 +39,7 @@ namespace UnityStandardAssets.Vehicles.Car
         private bool u_curve = false;
         private float u_curve_final_heading = 0;
         bool isCurveVertical = true;
+        bool had_hit_backward = false;
 
         private bool adjusting;
         Vector3? reference_position;
@@ -712,8 +713,9 @@ namespace UnityStandardAssets.Vehicles.Car
             RaycastHit hit;
             Vector3 maxRange = carSize*1.2f;
             bool had_hit = false;
+
             
-            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+            if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
             {
                 Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
@@ -773,6 +775,18 @@ namespace UnityStandardAssets.Vehicles.Car
                 this.accelerationAmount *= 1.25f;
                 Debug.Log("Not hit speed");
             }
+
+            if(!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward)
+            {
+                had_hit_backward = true;
+                this.accelerationAmount = 1;
+                this.footbrake = 0;
+                this.steeringAmount *= 1;
+                if (m_Car.CurrentSpeed > 10f)
+                    had_hit_backward = false;
+            }
+
+
         }
 
     }
